@@ -17,7 +17,7 @@ class MLP():
 
         self.wd = float(wd)
 
-        self.loss = CrossEntroy() if loss == "cross_entropy" else MSE()
+        self.loss = CrossEntropy() if loss == "cross_entropy" else MSE()
         self.optim = None
         if optim == "sgd":
             self.optim = SGD(*optim_param)

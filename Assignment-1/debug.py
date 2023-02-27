@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
     loss_dict = {
         "mean_squared_error": MSE(),
-        "cross_entropy": CrossEntroy()
+        "cross_entropy": CrossEntropy()
     }
     args = parser.parse_args()
     

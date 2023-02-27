@@ -6,7 +6,7 @@ class MSE():
     def grad(self, y_pred, y_true):
         return np.mean(2*(y_pred - y_true)*(y_true*y_pred[np.argmax(y_true, axis=1)] - y_pred[np.argmax(y_true, axis=1)]*y_pred))
 
-class CrossEntroy():
+class CrossEntropy():
     def __call__(self, y_pred, y_true):
         return np.mean(np.sum((-1.0 * np.multiply(y_true, np.log(y_pred))), axis=1))
 
