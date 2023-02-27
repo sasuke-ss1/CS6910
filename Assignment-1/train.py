@@ -206,7 +206,7 @@ if __name__ == "__main__":
     #Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
 
     if args.wandb_project != "false":
-        wandb.login()
+        wandb.login(key="e99813e81e3838e6607d858a20693d589933495f")
         with open("./sweep.yml", "r") as f:
             sweep_config = yaml.safe_load(f)
         
