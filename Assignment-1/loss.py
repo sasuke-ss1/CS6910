@@ -8,10 +8,11 @@ class MSE():
 
 class CrossEntroy():
     def __call__(self, y_pred, y_true):
-        return np.mean(-1.0 * np.multiply(y_true, np.log(y_pred)))
+        return np.mean(np.sum((-1.0 * np.multiply(y_true, np.log(y_pred))), axis=1))
 
     def grad(self, y_pred, y_true):
-        grad = -(y_true -y_pred) 
+       
+        grad = -(1/y_true.shape[0])*(y_true -y_pred)
         #print(grad[0])
 
         return grad

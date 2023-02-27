@@ -4,16 +4,18 @@ from optimizer import *
 import sys
 
 class MLP():
-    def __init__(self, Layers, activation = "sigmoid", loss = "cross_entropy", optim="sgd", optim_param = None):
+    def __init__(self, Layers, activation = "sigmoid", loss = "cross_entropy", optim="sgd", optim_param = None, weight_init = "xavier", wd = False):
         network = []
         for i in range(len(Layers) - 2):
-            network.append(Linear(Layers[i], Layers[i+1], activation=activation))
+            network.append(Linear(Layers[i], Layers[i+1], activation=activation, init=weight_init))
         #network.append(Linear(Layers[-2], Layers[-1], activation=activation))
-        network.append(Linear(Layers[-2], Layers[-1], last = True))
+        network.append(Linear(Layers[-2], Layers[-1], last = True, init=weight_init))
         self.network = network
 
         self.act = activation
         self.opt = optim
+
+        self.wd = float(wd)
 
         self.loss = CrossEntroy() if loss == "cross_entropy" else MSE()
         self.optim = None
@@ -47,24 +49,13 @@ class MLP():
         for layer in self.network:
             tmp = layer(tmp)
             self.outs.append(tmp)
-        #print(self.outs)
         return tmp
 
     def backward(self, y_true):
         self.network[-1].delta = self.loss.grad(self.outs[-1], y_true).T
-        #self.network[-1].activation.grad().T
-        #print(self.network[-1].activation.grad().T.shape)
-        #print(self.loss.grad(self.outs[-1], y_true).T.shape)
-        #self.loss.grad(self.outs[-1], y_true).T
         for i in range(len(self.network)-2, -1, -1):
-            #print(self.network[i+1].w.T.shape)
-            #print(self.network[i+1].delta.shape)
-            #print()
-            #print(self.network[i].activation.grad().T.shape)
-            #sys.exit()
             self.network[i].delta = (self.network[i+1].w.T@self.network[i+1].delta)*self.network[i].activation.grad().T
-            #print((self.network[i+1].w.T@self.network[i+1].delta).shape)
-        #self.network[0].delta = (self.network[1].w)
+
     def step(self, y_true = None):
         if self.opt == "nag":
             beta = self.optim.beta
@@ -82,7 +73,5 @@ class MLP():
             
         else:
             for i, layer in enumerate(self.network):
-                self.optim(layer, layer.delta@self.outs[i], np.sum(layer.delta, axis=1))
-
-
-        
+                #print(self.outs[i+1].shape)
+                self.optim(layer, layer.delta@self.outs[i] + self.wd*layer.w, np.sum(layer.delta, axis=1))

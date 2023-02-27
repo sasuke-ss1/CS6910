@@ -16,7 +16,7 @@ class ReLU():
         return self.z
 
     def grad(self):
-        np.where(self.z>0, np.ones(1,), np.zeros(1,))
+        return np.where(self.z>0, np.ones(1,), np.zeros(1,))
 
 class Identity():        
     def __call__(self, x):
@@ -43,5 +43,12 @@ class Softmax():
         return self.z
     
     def grad(self, y_true):
+        pass
+
+class Your_activaiton():
+    def __call__(self, x):
+        pass
+
+    def grad(self):
         pass
 

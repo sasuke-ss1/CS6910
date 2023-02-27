@@ -6,6 +6,7 @@ class SGD():
         self.lr = lr
 
     def __call__(self, layer, grad_w, grad_b):
+        #print(layer.w.shape)
         layer.w -= self.lr*grad_w
         layer.b -= self.lr*grad_b
         

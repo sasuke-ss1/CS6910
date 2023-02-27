@@ -1,6 +1,5 @@
 from keras.datasets import mnist, fashion_mnist
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
 import warnings
 import numpy as np
 warnings.filterwarnings("ignore")
@@ -11,7 +10,7 @@ def dataset(name, num_features = 784, batch_size = 128):
     elif name == "fashion_mnist":
         (X, y) , (X_test, y_test) = fashion_mnist.load_data()
     X
-    X = X.reshape(X.shape[0], num_features)/255
+    X = X.reshape(X.shape[0], num_features)/255.0
     X_test = X_test.reshape(X_test.shape[0], num_features)
 
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -42,6 +41,9 @@ def dataset(name, num_features = 784, batch_size = 128):
     
     X_train = np.array_split(X_train, batch_size)
     y_train_one_hot = np.array_split(y_train_one_hot, batch_size)
+
+    X_val = np.array_split(X_val, batch_size)
+    y_val_one_hot = np.array_split(y_val_one_hot, batch_size)    
 
     #print(X_train[1].shape, y_train_one_hot[1].shape)
     #print(len(X_train))
