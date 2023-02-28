@@ -206,7 +206,7 @@ if __name__ == "__main__":
     #Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
 
     if args.wandb_project != "false":
-        wandb.login(key="e99813e81e3838e6607d858a20693d589933495fNN")
+        wandb.login(key="e99813e81e3838e6607d858a20693d589933495f")
         with open("./sweep.yml", "r") as f:
             sweep_config = yaml.safe_load(f)
         
@@ -262,7 +262,7 @@ if __name__ == "__main__":
 
         Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
 
-        Model = MLP(Layers=[784, 512, 256, 128, 64, 32, 10], optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init, wd = args.weight_decay, activation=args.activation)
+        Model = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init, wd = args.weight_decay, activation=args.activation)
         Model.summary()
         
         train(Model, data ,loss_dict[args.loss], args.optimizer, args = args)
