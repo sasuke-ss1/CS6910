@@ -162,8 +162,8 @@ def train_wb():
         wandb.log(  
                     {
                         "train_loss": epoch_train_losses[-1],
-                        "val_loss": accu_train_epoch[-1],
-                        "train_accuracy": epoch_val_losses[-1],
+                        "train_accuracy": accu_train_epoch[-1],
+                        "val_loss": epoch_val_losses[-1],
                         "val_accuracy": accu_val_epoch[-1]
                 
                     }
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     #Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
 
     if args.wandb_project != "false":
-        wandb.login(key="e99813e81e3838e6607d858a20693d589933495f")
+        wandb.login(key="e99813e81e3838e6607d858a20693d589933495fNN")
         with open("./sweep.yml", "r") as f:
             sweep_config = yaml.safe_load(f)
         
