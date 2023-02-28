@@ -78,7 +78,7 @@ class Adam():
 
 
 class NAdam():
-    def __init__(self, beta1, beta2, lr, eps):
+    def __init__(self, lr, beta1, beta2, eps):
         self.beta1 = beta1
         self.beta2 = beta2
         self.lr = lr
