@@ -69,7 +69,7 @@ class MLP():
             for i, layer in enumerate(self.network):
                 layer.w += beta*layer.u_w
                 layer.b += beta*layer.u_b
-                self.optim(layer, layer.delta@self.outs[i], np.sum(layer.delta, axis=1))
+                self.optim(layer, layer.delta@self.outs[i] + self.wd*layer.w, np.sum(layer.delta, axis=1))
             
         else:
             for i, layer in enumerate(self.network):
