@@ -106,7 +106,7 @@ def train_wb():
     X_train, X_val, y_train_one_hot, y_val_one_hot , num_classes = dataset(args.dataset)
 
     Layers = [784];[Layers.append(config.hidden_size) for _ in range(config.num_layers)];Layers.append(num_classes)
-    model = MLP(Layers, config.activation, optim=config.optimizer, optim_param = optim_params[config.optimizer], weight_init=config.weight_init)
+    model = MLP(Layers, config.activation, optim=config.optimizer, optim_param = optim_params[config.optimizer], weight_init=config.weight_init, activation=config.activation)
     loss = CrossEntropy()
 
     train_data = list(zip(X_train, y_train_one_hot))
@@ -262,7 +262,7 @@ if __name__ == "__main__":
 
         Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
 
-        Model = MLP(Layers=Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init, wd = args.weight_decay)
+        Model = MLP(Layers=Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init, wd = args.weight_decay, activation=args.activation)
         Model.summary()
         
         train(Model, data ,loss_dict[args.loss], args.optimizer, args = args)
