@@ -6,6 +6,11 @@ from loss import *
 import sys
 import wandb
 import yaml
+from sklearn.metrics import confusion_matrix
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sn
+
 
 def get_accuracy(y_pred, y_true):
     a = (np.argmax(y_pred, axis=1)==np.argmax(y_true, axis=1))
@@ -13,7 +18,7 @@ def get_accuracy(y_pred, y_true):
     return a.mean()
 
 
-def train(model, dataset, loss, optim, args):    
+def train(model, dataset, loss, optim, args, confusion =False):    
     X_train, X_val, y_train_one_hot, y_val_one_hot , num_classes = dataset
 
     train_data = list(zip(X_train, y_train_one_hot))
@@ -65,6 +70,18 @@ def train(model, dataset, loss, optim, args):
         print(f"Val Epoch Loss: {epoch_val_losses[-1]}")
         print(f"Val Accuracy: {accu_val_epoch[-1]}")
         print("\n\n") 
+    if confusion:
+        val_data = np.concatenate(X_val, axis=0)
+        labels = np.concatenate(y_val_one_hot, axis=0)
+        pred =  model.forward(val_data)
+        con = confusion_matrix(np.argmax(labels, axis=1), np.argmax(pred, axis=1))
+
+        return con
+
+    return sum(accu_val_epoch)/len(accu_val_epoch)
+
+
+    
 
 
 def train_wb():
@@ -193,6 +210,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_layers", "-nhl", default=1, type=int, help="Number of hidden layers used in feedforward neural network.")
     parser.add_argument("--hidden_size", "-sz", default=4, type=int, help="Number of hidden neurons in a feedforward layer.")
     parser.add_argument("--activation", "-a", default="sigmoid", type=str, help='choices: ["identity", "sigmoid", "tanh", "ReLU"]')
+    parser.add_argument("--question", "-q", type=int, default=None, help="The Question Number you want to run")
 
     loss_dict = {
         "mean_squared_error": MSE(),
@@ -205,7 +223,7 @@ if __name__ == "__main__":
     num_classes = 10
     #Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
 
-    if args.wandb_project != "false":
+    if args.question:
         wandb.login(key="e99813e81e3838e6607d858a20693d589933495f")
         with open("./sweep.yml", "r") as f:
             sweep_config = yaml.safe_load(f)
@@ -216,38 +234,99 @@ if __name__ == "__main__":
 
         
         #question 1
+        if args.question == 1:
+            X_train, X_val, y_train_one_hot, y_val_one_hot , num_classes = data
+            x = np.concatenate(X_train, axis=0);y = np.concatenate(y_train_one_hot, axis=0)
+            if args.dataset == "fashion_mnist":
+                class_mapping = {0: "T-shirt/top", 1: "Trouser", 2: "Pullover", 3: "Dress", 4: "Coat", 5: "Sandal", 6: "Shirt", 7: "Sneaker", 8: "Bag", 9: "Ankle boot"} 
+            else:
+                class_mapping = {i:str(i) for i in range(10)}
 
-        #X_train, X_val, y_train_one_hot, y_val_one_hot , num_classes = data
-        #x = np.concatenate(X_train, axis=0);y = np.concatenate(y_train_one_hot, axis=0)
-        #if args.dataset == "fashion_mnist":
-        #    class_mapping = {0: "T-shirt/top", 1: "Trouser", 2: "Pullover", 3: "Dress", 4: "Coat", 5: "Sandal", 6: "Shirt", 7: "Sneaker", 8: "Bag", 9: "Ankle boot"} 
-        #else:
-        #    class_mapping = {i:str(i) for i in range(10)}
-#
-#        #y = np.argmax(y, axis=0)
-#        #x = x[y]
-#        #
-        #wandb.log({"Question 1": [wandb.Image(x[i].reshape(28, 28, 1), caption=class_mapping[i]) for i in range(10)]})
-#
-        #del x, y
-        print("\n\n")
+            y = np.argmax(y, axis=0)
+            x = x[y]
+        
+            wandb.log({"Question 1": [wandb.Image(x[i].reshape(28, 28, 1), caption=class_mapping[i]) for i in range(10)]})
 
         #question 2, 3
-        print("For Question 2&3 run the train.py with -wp as false\n\n")
+        elif args.question in [2,3]:
+            print("For Question 2&3 run the train.py again but without specifying any question number")
 
         #question 4
 
+        elif args.question == 4:
+            sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)
+            wandb.agent(sweep_id, function=train_wb)
+
+        elif args.question in [5, 6]:
+            print("Please Check the Readme and my wandb assignment page")
+
+        elif args.question == 7:
+            ## Noting the best model from wandb.ai
+            best_model_config = {
+                "hidden_size": 64,
+                "activation": "relu",
+                "num_layers": 4,
+                "epochs": 10,
+                "weight_decay": 0.0,
+                "weight_init": "random", ## Xavier problem
+                "optimizer": "adam",
+                "learning_rate": 0.001,
+                "batch_size": 32
+            }
+            args.batch_size = best_model_config["batch_size"]
+            args.epochs = best_model_config["epochs"]
+            data = dataset(args.dataset, batch_size=args.batch_size)            
+            optim_params = [best_model_config["learning_rate"], args.beta1, args.beta2, args.epsilon]
+            Layers = [784];[Layers.append(best_model_config["hidden_size"]) for _ in range(best_model_config["num_layers"])];Layers.append(num_classes)
+
+
+            Model = MLP(Layers = Layers, optim=best_model_config["optimizer"], optim_param= optim_params, weight_init = best_model_config["weight_init"],\
+                wd = best_model_config["weight_decay"], activation=best_model_config["activation"])
+                
+            Model.summary()
+            
+            cm = train(Model, data ,loss_dict["cross_entropy"], best_model_config["optimizer"], args = args, confusion=True)
+
+            ### Confusion Matrix
+
+            df_cm = pd.DataFrame(cm, index = range(1, len(cm)+1), columns = range(1, len(cm) + 1))
+            plt.figure(figsize=(12, 5))
+            sn.heatmap(df_cm, annot=True)
+            plt.show()
+            
+        elif args.question == 8:
+
+            best_model_config = {
+                "hidden_size": 64,
+                "activation": "relu",
+                "num_layers": 4,
+                "epochs": 10,
+                "weight_decay": 0.0,
+                "weight_init": "random", ## Xavier problem
+                "optimizer": "adam",
+                "learning_rate": 0.001,
+                "batch_size": 32
+            }
+            args.batch_size = best_model_config["batch_size"]
+            args.epochs = best_model_config["epochs"]
+            data = dataset(args.dataset, batch_size=args.batch_size)            
+            optim_params = [best_model_config["learning_rate"], args.beta1, args.beta2, args.epsilon]
+            Layers = [784];[Layers.append(best_model_config["hidden_size"]) for _ in range(best_model_config["num_layers"])];Layers.append(num_classes)
+
+            Model_2 = MLP(Layers = Layers, optim=best_model_config["optimizer"], optim_param= optim_params, weight_init = best_model_config["weight_init"],\
+                wd = best_model_config["weight_decay"], activation=best_model_config["activation"])
+
+            Model_1 = MLP(Layers = Layers, optim=best_model_config["optimizer"], optim_param= optim_params, weight_init = best_model_config["weight_init"],\
+                wd = best_model_config["weight_decay"], activation=best_model_config["activation"])
+                
+
+            Model_1.summary()
         
-        sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)
-        wandb.agent(sweep_id, function=train_wb)
-        
-              
-
-        
-
-
-
-
+            val_cross = train(Model_1, data ,loss_dict["cross_entropy"], best_model_config["optimizer"], args = args)
+            ## Some Reset Command
+            val_mse = train(Model_2, data ,loss_dict["mean_squared_error"], best_model_config["optimizer"], args = args)
+            
+            ### Add graphs as shit
 
 
     else:

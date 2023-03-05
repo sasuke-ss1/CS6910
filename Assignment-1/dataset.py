@@ -1,8 +1,6 @@
 from keras.datasets import mnist, fashion_mnist
 from sklearn.model_selection import train_test_split
-import warnings
 import numpy as np
-warnings.filterwarnings("ignore")
 
 def dataset(name, num_features = 784, batch_size = 128):
     if name == "mnist":

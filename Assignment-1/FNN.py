@@ -5,13 +5,12 @@ import sys
 
 class MLP():
     def __init__(self, Layers, activation = "sigmoid", loss = "cross_entropy", optim="sgd", optim_param = None, weight_init = "xavier", wd = False):
-        network = []
+        network = []        
         for i in range(len(Layers) - 2):
             network.append(Linear(Layers[i], Layers[i+1], activation=activation, init=weight_init))
         #network.append(Linear(Layers[-2], Layers[-1], activation=activation))
         network.append(Linear(Layers[-2], Layers[-1], last = True, init=weight_init))
         self.network = network
-
         self.act = activation
         self.opt = optim
 
@@ -75,3 +74,5 @@ class MLP():
             for i, layer in enumerate(self.network):
                 #print(self.outs[i+1].shape)
                 self.optim(layer, layer.delta@self.outs[i] + self.wd*layer.w, np.sum(layer.delta, axis=1))
+    
+ 
