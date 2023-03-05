@@ -18,7 +18,7 @@ def get_accuracy(y_pred, y_true):
     return a.mean()
 
 
-def train(model, dataset, loss, optim, args, confusion =False):    
+def train(model, dataset, loss, optim, args, confusion =False, log=True):    
     X_train, X_val, y_train_one_hot, y_val_one_hot , num_classes = dataset
 
     train_data = list(zip(X_train, y_train_one_hot))
@@ -33,7 +33,8 @@ def train(model, dataset, loss, optim, args, confusion =False):
         accu_val_batch = []
         accu_train_epoch= []
         accu_val_epoch = []
-        print(f"EPOCH: {epoch+1}")
+        if log:
+            print(f"EPOCH: {epoch+1}")
         for images, labels in train_data:
             if images.shape[0] == 0:
                 continue
@@ -51,10 +52,11 @@ def train(model, dataset, loss, optim, args, confusion =False):
         
         epoch_train_losses.append(sum(train_loss_batch)/len(train_loss_batch))
         accu_train_epoch.append(sum(accu_train_batch)/len(accu_train_batch))
-        print(f"Train Epoch Loss: {epoch_train_losses[-1]}")
-        print(f"Train Accuracy: {accu_train_epoch[-1]}")
+        if log:
+            print(f"Train Epoch Loss: {epoch_train_losses[-1]}")
+            print(f"Train Accuracy: {accu_train_epoch[-1]}")
 
-        print("Running Validation")
+            print("Running Validation")
 
         for images, labels in val_data:
             if images.shape[0] == 0:
@@ -67,9 +69,10 @@ def train(model, dataset, loss, optim, args, confusion =False):
         
         epoch_val_losses.append(sum(val_loss_batch)/len(val_loss_batch))
         accu_val_epoch.append(sum(accu_val_batch)/len(accu_val_batch))
-        print(f"Val Epoch Loss: {epoch_val_losses[-1]}")
-        print(f"Val Accuracy: {accu_val_epoch[-1]}")
-        print("\n\n") 
+        if log:
+            print(f"Val Epoch Loss: {epoch_val_losses[-1]}")
+            print(f"Val Accuracy: {accu_val_epoch[-1]}")
+            print("\n\n") 
     if confusion:
         val_data = np.concatenate(X_val, axis=0)
         labels = np.concatenate(y_val_one_hot, axis=0)
@@ -235,6 +238,7 @@ if __name__ == "__main__":
         
         #question 1
         if args.question == 1:
+            wandb.init(project=args.wandb_project)
             X_train, X_val, y_train_one_hot, y_val_one_hot , num_classes = data
             x = np.concatenate(X_train, axis=0);y = np.concatenate(y_train_one_hot, axis=0)
             if args.dataset == "fashion_mnist":
@@ -295,7 +299,8 @@ if __name__ == "__main__":
             plt.show()
             
         elif args.question == 8:
-
+            run = wandb.init(project=args.wandb_project)
+            wandb.run.name = "question-8"
             best_model_config = {
                 "hidden_size": 64,
                 "activation": "relu",
@@ -318,15 +323,23 @@ if __name__ == "__main__":
 
             Model_1 = MLP(Layers = Layers, optim=best_model_config["optimizer"], optim_param= optim_params, weight_init = best_model_config["weight_init"],\
                 wd = best_model_config["weight_decay"], activation=best_model_config["activation"])
-                
+            args.epochs = 1
+            val_mse, val_cross = [], []
+            for epochs in range(best_model_config['epochs']):
 
-            Model_1.summary()
-        
-            val_cross = train(Model_1, data ,loss_dict["cross_entropy"], best_model_config["optimizer"], args = args)
-            ## Some Reset Command
-            val_mse = train(Model_2, data ,loss_dict["mean_squared_error"], best_model_config["optimizer"], args = args)
-            
-            ### Add graphs as shit
+                val_mse.append(train(Model_2, data ,loss_dict["mean_squared_error"], best_model_config["optimizer"], args=args, log=False))
+                val_cross.append(train(Model_1, data ,loss_dict["cross_entropy"], best_model_config["optimizer"], args= args, log=False))
+            wandb.log({
+                "mse vs crossentropy": wandb.plot.line_series(
+                xs = list(range(best_model_config["epochs"])),
+                ys = [val_mse, val_cross],
+                keys=["mse", "cross_entropy"],
+                title = "mse vs cross_entropy",
+                xname = "epochs"
+                )
+            })
+
+
 
 
     else:
