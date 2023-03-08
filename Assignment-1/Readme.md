@@ -176,4 +176,34 @@ class NAdam():
 
         layer.t += 1
 ```
+## Question 4
+In this question we tried to find the best set of hyperparameters with the help of ``` wandb.sweep() ``` functionality. To use this we first had to specify the strategy and also the metric we are trying to maximize/minimize, we also need to define our search space.
+
+Wandb's sweep function runs a function defined by the user and logs the quantities the user desires. It basically uses multiple agents to run the user defined function for different configuration extracted for specified user configuration space.
+
+We had make a ``` sweep.yml ``` file to specify all the paramaters for wandb and then we defined a ``` train_wb() ``` function which is used by wandb for hyperparameter search.
+!!!!!! Stratergy and stuff left !!!!!!!!!
+
+The generated plots from wandb can be found in the !!!!!!!reports pdf!!!!!!!!!!
+
+## Question 5
+
+This is basically the plot of all model vs the accuracies they got, then plots can ne found in the !!!!!reports pdf.!!!!!!
+
+## Question 6
+
+!!!!!!! Can do it right now!!!!!!!
+
+## Question 7
+
+Here we plot the confusion matrix, for this we used the __confusion_matrix__ function from __sklearn__ library,
+we plot this for the best model found through hyperparameter search in wandb.
+
+!!!!!!!! As we can see that !!!!!!!!
+
+## Quesiton 8
+
+In this question we compare the __Mean squared error__ with the __Cross entropy__ error empericaly, we see that both of them perform quite identically but cross entropy on average is able to perform marginally better that mean squared error !!!!!! Add more and image!!!!.
+
+## Question 9 and 10
 
