@@ -212,7 +212,7 @@ if __name__ == "__main__":
     parser.add_argument("--weight_init", "-w_i", default="random", type=str, help='choices: ["random", "xavier"]')
     parser.add_argument("--num_layers", "-nhl", default=1, type=int, help="Number of hidden layers used in feedforward neural network.")
     parser.add_argument("--hidden_size", "-sz", default=4, type=int, help="Number of hidden neurons in a feedforward layer.")
-    parser.add_argument("--activation", "-a", default="sigmoid", type=str, help='choices: ["identity", "sigmoid", "tanh", "ReLU"]')
+    parser.add_argument("--activation", "-a", default="sigmoid", type=str, help='choices: ["identity", "sigmoid", "tanh", "relu"]')
     parser.add_argument("--question", "-q", type=int, default=None, help="The Question Number you want to run")
 
     loss_dict = {
