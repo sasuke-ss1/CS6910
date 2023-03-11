@@ -222,7 +222,13 @@ This is basically the plot of all model vs the accuracies they got, then plots c
 
 ## Question 6
 
-!!!! Learn
+- We see form the plot of question 5 that initially the model performance is not very good but as time passes it gets better and better, this behaviour is expected form bayesian search as it updates its belief of good hyperparametes with every next run and hence gets better at giving the optimal hyperparameters.
+- Most of the runs that resulted in 60-70% accuracy could be blamed on the optimizer as most of them are either using nag, sgd or momentum which is using learning_rate 0.001 or 0.0001 and this might just not be large enough for them to converge.
+- We also wee that larger batch_size models are  in general giving low accuracy than their lower batch_size counterpart. This is beacuse the lower batch_size runs are doing more numbers of updates per epochs than the higher batch_size runs and hence in a way converge faster, this doesnt necessarily means that higher batch_size is bad.
+- Interestingly random weight initialization outperforms xavier initialization which is not intuitive.
+- It can also be seen that adaptive gradient optimizers are consistently outperforming SGD, Momentum and NAG.
+- After a point the model starts to over fit and so to gain 95% accuracy we can decrease the model complexity and we could also play around with the betas of nadam, adam, rmsprop as through extensive experiments we have shown that these matters the most.
+
 
 ## Question 7
 
