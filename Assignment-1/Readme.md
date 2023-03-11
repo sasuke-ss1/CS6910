@@ -229,7 +229,7 @@ This is basically the plot of all model vs the accuracies they got, then plots c
 Here we plot the confusion matrix, for this we used the __confusion_matrix__ function from __sklearn__ library,
 we plot this for the best model found through hyperparameter search in wandb.
 
-[!A cat](url "Confusion Matrix")
+![alt text](https://github.com/sasuke-ss1/CS6910/blob/main/Assignment-1/confusion.png)
 
 As we can see that the model is able to predict very well for most classes but as we can see that the model is not properly able to differentiate between coat, dress and pullover and shirt which is resoanable as all of them are clothing, it can differentiate between shoes and clothes very well.
 
