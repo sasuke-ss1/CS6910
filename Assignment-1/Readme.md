@@ -14,21 +14,21 @@ python train.py
 | ``` -wp ```, ``` --wandb_project ```  | assignment1   |Project name used to track experiments in Weights & Biases dashboard
 | ``` -we ```, ``` --wandb_entity ```   | sasuke        |Wandb Entity used to track experiments in the Weights & Biases dashboard
 | ``` -d ```, ``` --dataset ```         | fashion_mnist |Choices: ["mnist", "fashion_mnist"]
-| ``` -e ```, ``` --epochs ```          | 1             |Number of epochs to train neural network
-| ``` -b ```, ``` --batch_size ```      | 4             |Batch size used to train neural network
+| ``` -e ```, ``` --epochs ```          | 10            |Number of epochs to train neural network
+| ``` -b ```, ``` --batch_size ```      | 128           |Batch size used to train neural network
 | ``` -l ```, ``` --loss ```            | cross_entropy |Choices: ["mean_squared_error", "cross_entropy"]
-| ``` -o ```, ``` --optimizer ```       | sgd           |Choices: ["sgd", "momentum", "nag", "rmsprop", "adam", "nadam"]
-| ``` -lr ```, ``` --learning_rate ```  | 0.1           |Learning rate used to optimize model parameters
+| ``` -o ```, ``` --optimizer ```       | nadam         |Choices: ["sgd", "momentum", "nag", "rmsprop", "adam", "nadam"]
+| ``` -lr ```, ``` --learning_rate ```  | 0.001         |Learning rate used to optimize model parameters
 | ``` -m ```, ``` --momentum ```        | 0.5           |Momentum used by momentum and nag optimizers
 | ``` -beta ```, ``` --beta ```         | 0.5           |Beta used by rmsprop optimizer
 | ``` -beta1 ```, ``` --beta1 ```       | 0.5           |Beta1 used by adam and nadam optimizers
 | ``` -beta2 ```, ``` --beta2 ```       | 0.5           |Beta2 used by adam and nadam optimizers
 | ``` -eps ```, ``` --epsilon ```       | 0.000001      |Epsilon used by optimizers
-| ``` -w_d ```, ``` --weight_decay ```  | .0            |Weight decay used by optimizers
+| ``` -w_d ```, ``` --weight_decay ```  | 0.0005        |Weight decay used by optimizers
 | ``` -w_i ```, ``` --weight_init ```   | random        |Choices: ["random", "xavier"]
-| ``` -nhl ```, ``` --num_layers ```    | 1             |Number of hidden layers used in feedforward neural network
-| ``` -sz ```, ``` --hidden_size ```    | 4             |Number of hidden neurons in a feedforward layer
-| ``` -a ```, ``` --activation ```      | sigmoid       |Choices: ["identity", "sigmoid", "tanh", "relu"]
+| ``` -nhl ```, ``` --num_layers ```    | 5             |Number of hidden layers used in feedforward neural network
+| ``` -sz ```, ``` --hidden_size ```    | 64            |Number of hidden neurons in a feedforward layer
+| ``` -a ```, ``` --activation ```      | relu          |Choices: ["identity", "sigmoid", "tanh", "relu"]
 | ``` -q ```, ``` --question ```        | None          |Question Number of Assignment
 
 Note: If Question number is specified the ``` train.py ``` will run the code for the intended question if someone has to try some random configuration then they can runt ``` python train.py ``` with the required command line arguments specified
@@ -229,7 +229,7 @@ This is basically the plot of all model vs the accuracies they got, then plots c
 Here we plot the confusion matrix, for this we used the __confusion_matrix__ function from __sklearn__ library,
 we plot this for the best model found through hyperparameter search in wandb.
 
-[!A cat](url "Confusion Matrix")
+![alt text](https://github.com/sasuke-ss1/CS6910/blob/main/Assignment-1/confusion.png)
 
 As we can see that the model is able to predict very well for most classes but as we can see that the model is not properly able to differentiate between coat, dress and pullover and shirt which is resoanable as all of them are clothing, it can differentiate between shoes and clothes very well.
 
