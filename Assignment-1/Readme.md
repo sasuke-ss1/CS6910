@@ -51,7 +51,7 @@ The ``` forward() ``` function defines the forward pass throughout the whole net
 
 (Note: It is assumed that the network will only be used for classification so the last layer of the neural netowork will always have __softmax()__ activation.)
 
-The ```sh backward() ``` function implements the backward pass throught the entire network by propagating the gradients backward and calculating the chain rule, finally the ``` step() ``` function will apply the gradient of each layer to that layer sequentially the using the specified the optimizer.
+The ``` backward() ``` function implements the backward pass throught the entire network by propagating the gradients backward and calculating the chain rule, finally the ``` step() ``` function will apply the gradient of each layer to that layer sequentially the using the specified the optimizer.
 
 ## Question 3
 
@@ -101,6 +101,24 @@ class NAG():
 
         layer.u_b = self.beta*layer.u_b + grad_b
         layer.b -= self.lr*layer.u_b
+        
+```        
+Since Nag is based of "look before you leap" we have define a different step loop nag which is:  
+```python 
+if self.opt == "nag":
+    beta = self.optim.beta
+    for i,  layer in enumerate(self.network):
+        layer.w -= beta*layer.u_w
+        layer.b -= beta*layer.u_b
+
+    self.forward(self.outs[0])
+    self.backward(y_true)
+
+    for i, layer in enumerate(self.network):
+        layer.w += beta*layer.u_w
+        layer.b += beta*layer.u_b
+        self.optim(layer, layer.delta@self.outs[i] + self.wd*layer.w, np.sum(layer.delta, axis=1))
+ 
 ```
 
 RMSProp:
@@ -182,27 +200,45 @@ In this question we tried to find the best set of hyperparameters with the help 
 Wandb's sweep function runs a function defined by the user and logs the quantities the user desires. It basically uses multiple agents to run the user defined function for different configuration extracted for specified user configuration space.
 
 We had make a ``` sweep.yml ``` file to specify all the paramaters for wandb and then we defined a ``` train_wb() ``` function which is used by wandb for hyperparameter search.
-!!!!!! Stratergy and stuff left !!!!!!!!!
 
-The generated plots from wandb can be found in the !!!!!!!reports pdf!!!!!!!!!!
+I first tried using grid search stratergy for wandb but quickly realized that it has exponnetial time complextiy and it will take forever to run through all the possible choice of hyperparameters, so from there after analyzing the results of grid search I reduced my hyperparameter search space and used bayesian search stratergy.
+
+I choose bayesian because it actually considers the past history of hyperparameters(prior) selected before selecting the new set of hyperparameters.
+
+So at every run it does the following:
+- Choose a set of hyperparameter values (our belief) and use them to train the machine learning model.
+- Evalute the performace of the model on those hyperparamters.
+- Update our belief accordingly.
+
+So to summarize we begin with an initial estimate of the hyperparameters and progressively update it in light of previous findings.
+
+Note:(My hyperparameter search space can be found in ``` sweep.yml ```)
+
+The generated plots from wandb can be found in the report submitted.
 
 ## Question 5
 
-This is basically the plot of all model vs the accuracies they got, then plots can ne found in the !!!!!reports pdf.!!!!!!
+This is basically the plot of all model vs the accuracies they got, then plots can also be found in the report submitted, we see from this graph that bayesian search was able to identify the optimal hyperparameters quite quickly and many model runs results in more 85% validation accuracy.
 
 ## Question 6
 
-!!!!!!! Can do it right now!!!!!!!
+!!!! Learn
 
 ## Question 7
 
 Here we plot the confusion matrix, for this we used the __confusion_matrix__ function from __sklearn__ library,
 we plot this for the best model found through hyperparameter search in wandb.
 
-!!!!!!!! As we can see that !!!!!!!!
+[!A cat](url "Confusion Matrix")
+
+As we can see that the model is able to predict very well for most classes but as we can see that the model is not properly able to differentiate between coat, dress and pullover and shirt which is resoanable as all of them are clothing, it can differentiate between shoes and clothes very well.
 
 ## Quesiton 8
 
-In this question we compare the __Mean squared error__ with the __Cross entropy__ error empericaly, we see that both of them perform quite identically but cross entropy on average is able to perform marginally better that mean squared error !!!!!! Add more and image!!!!.
+In this question we compare the __Mean squared error__ with the __Cross entropy__ error emperically, we see that both of them perform quite identically but cross entropy on average is able to perform marginally better that mean squared error, the result is not quite intuitive but could be because MNIST/Fashion-MNIST are very simple dataset and hence cross_entropy and MSE are performing almost the same.
+
+The plots for the same can be found in the wandb report submitted.
 
 ## Question 9 and 10
+
+For the most significant 3 hyperparameters that I would like to tune on MNIST given my observations of Fashion-MNIST would be learning_rate, hidden_size and number_of_hidden_layer. I will choose relu activation as the my best val_accuracy runs were completely dominated by relu, I would also choose nadam as my optimizer as it also performed better for val accuracy accross all the runs, batch_size doesnt matter much as we found from the experiments, it also determines the speed of convergence as leeser the batch size, more the training and lesser the epcohs in general, so I will choose batch_size to be 128 also for the experiments it seems that weight initializations also doesnt matter much. Hence I will seacrh for learning_rate, hidden_size, and number_of_hidden_layers.

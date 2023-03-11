@@ -2,7 +2,7 @@ from keras.datasets import mnist, fashion_mnist
 from sklearn.model_selection import train_test_split
 import numpy as np
 
-def dataset(name, num_features = 784, batch_size = 128):
+def dataset(name, num_features = 784, batch_size = 128, test=False):
     if name == "mnist":
         (X, y) , (X_test, y_test) = mnist.load_data()
     elif name == "fashion_mnist":
@@ -45,6 +45,9 @@ def dataset(name, num_features = 784, batch_size = 128):
 
     #print(X_train[1].shape, y_train_one_hot[1].shape)
     #print(len(X_train))
+    if test:
+        return X_train, X_test, y_train_one_hot, y_test_one_hot, num_classes
+
     return X_train, X_val, y_train_one_hot, y_val_one_hot , num_classes
 
 if __name__ == "__main__":

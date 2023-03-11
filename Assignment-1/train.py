@@ -57,27 +57,25 @@ def train(model, dataset, loss, optim, args, confusion =False, log=True):
             print(f"Train Accuracy: {accu_train_epoch[-1]}")
 
             print("Running Validation")
+        if not confusion:
+            for images, labels in val_data:
+                if images.shape[0] == 0:
+                    continue
+                y_pred = model.forward(images)
+                val_loss_batch.append(loss(y_pred, labels))
+                accu_val_batch.append(get_accuracy(y_pred, labels))
+                
 
-        for images, labels in val_data:
-            if images.shape[0] == 0:
-                continue
-            y_pred = model.forward(images)
-            val_loss_batch.append(loss(y_pred, labels))
-            accu_val_batch.append(get_accuracy(y_pred, labels))
             
-
-        
-        epoch_val_losses.append(sum(val_loss_batch)/len(val_loss_batch))
-        accu_val_epoch.append(sum(accu_val_batch)/len(accu_val_batch))
-        if log:
-            print(f"Val Epoch Loss: {epoch_val_losses[-1]}")
-            print(f"Val Accuracy: {accu_val_epoch[-1]}")
-            print("\n\n") 
+            epoch_val_losses.append(sum(val_loss_batch)/len(val_loss_batch))
+            accu_val_epoch.append(sum(accu_val_batch)/len(accu_val_batch))
+            if log:
+                print(f"Val Epoch Loss: {epoch_val_losses[-1]}")
+                print(f"Val Accuracy: {accu_val_epoch[-1]}")
+                print("\n\n") 
     if confusion:
-        val_data = np.concatenate(X_val, axis=0)
-        labels = np.concatenate(y_val_one_hot, axis=0)
-        pred =  model.forward(val_data)
-        con = confusion_matrix(np.argmax(labels, axis=1), np.argmax(pred, axis=1))
+        pred =  model.forward(X_val)
+        con = confusion_matrix(np.argmax(y_val_one_hot, axis=1), np.argmax(pred, axis=1))
 
         return con
 
@@ -198,21 +196,21 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_project", "-wp", default="assignment1", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
     parser.add_argument("--wandb_entity", "-we", default="sasuke", type=str, help="Wandb Entity used to track experiments in the Weights & Biases dashboard.")
     parser.add_argument("--dataset", "-d", default="fashion_mnist", type=str, help='choices: ["mnist", "fashion_mnist"]') ## "" in string
-    parser.add_argument("--epochs", "-e", default=1, type=int, help="Number of epochs to train neural network.")
-    parser.add_argument("--batch_size", "-b", default=4, type=int,  help="Batch size used to train neural network.")
+    parser.add_argument("--epochs", "-e", default=10, type=int, help="Number of epochs to train neural network.")
+    parser.add_argument("--batch_size", "-b", default=128, type=int,  help="Batch size used to train neural network.")
     parser.add_argument("--loss", "-l", default="cross_entropy", type=str, help='choices: ["mean_squared_error", "cross_entropy"]')
-    parser.add_argument("--optimizer", "-o", default="sgd", type=str, help='choices: ["sgd", "momentum", "nag", "rmsprop", "adam", "nadam"]')
-    parser.add_argument("--learning_rate", "-lr", default=0.1, type=float, help="Learning rate used to optimize model parameters")
+    parser.add_argument("--optimizer", "-o", default="nadam", type=str, help='choices: ["sgd", "momentum", "nag", "rmsprop", "adam", "nadam"]')
+    parser.add_argument("--learning_rate", "-lr", default=0.001, type=float, help="Learning rate used to optimize model parameters")
     parser.add_argument("--momentum", "-m", default=0.5, type=float, help="	Momentum used by momentum and nag optimizers.")
     parser.add_argument("--beta", "-beta", default=0.5, type=float, help="Beta used by rmsprop optimizer")
     parser.add_argument("--beta1", "-beta1", default=0.5, type=float, help="Beta1 used by adam and nadam optimizers.")
     parser.add_argument("--beta2", "-beta2", default=0.5, type=float, help="Beta2 used by adam and nadam optimizers.")
     parser.add_argument("--epsilon", "-eps", default=0.000001, type=float, help="Epsilon used by optimizers.")
-    parser.add_argument("--weight_decay", "-w_d", default=.0, type=float, help="Weight decay used by optimizers.")
+    parser.add_argument("--weight_decay", "-w_d", default=0.0005, type=float, help="Weight decay used by optimizers.")
     parser.add_argument("--weight_init", "-w_i", default="random", type=str, help='choices: ["random", "xavier"]')
-    parser.add_argument("--num_layers", "-nhl", default=1, type=int, help="Number of hidden layers used in feedforward neural network.")
-    parser.add_argument("--hidden_size", "-sz", default=4, type=int, help="Number of hidden neurons in a feedforward layer.")
-    parser.add_argument("--activation", "-a", default="sigmoid", type=str, help='choices: ["identity", "sigmoid", "tanh", "relu"]')
+    parser.add_argument("--num_layers", "-nhl", default=5, type=int, help="Number of hidden layers used in feedforward neural network.")
+    parser.add_argument("--hidden_size", "-sz", default=64, type=int, help="Number of hidden neurons in a feedforward layer.")
+    parser.add_argument("--activation", "-a", default="relu", type=str, help='choices: ["identity", "sigmoid", "tanh", "relu"]')
     parser.add_argument("--question", "-q", type=int, default=None, help="The Question Number you want to run")
 
     loss_dict = {
@@ -239,6 +237,7 @@ if __name__ == "__main__":
         #question 1
         if args.question == 1:
             wandb.init(project=args.wandb_project)
+            wandb.run.name = "question-1"
             X_train, X_val, y_train_one_hot, y_val_one_hot , num_classes = data
             x = np.concatenate(X_train, axis=0);y = np.concatenate(y_train_one_hot, axis=0)
             if args.dataset == "fashion_mnist":
@@ -265,31 +264,23 @@ if __name__ == "__main__":
             print("Please Check the Readme and my wandb assignment page")
 
         elif args.question == 7:
-            ## Noting the best model from wandb.ai
-            best_model_config = {
-                "hidden_size": 64,
-                "activation": "relu",
-                "num_layers": 4,
-                "epochs": 10,
-                "weight_decay": 0.0,
-                "weight_init": "random", ## Xavier problem
-                "optimizer": "adam",
-                "learning_rate": 0.001,
-                "batch_size": 32
+            data = dataset(args.dataset, batch_size=args.batch_size, test=True)            
+            Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
+            optim_params = {
+                "sgd": [args.learning_rate],
+                "momentum": [args.learning_rate, args.momentum],
+                "nag": [args.learning_rate, args.momentum],
+                "rmsprop": [args.learning_rate, args.beta, args.epsilon],
+                "adam": [args.learning_rate, args.beta1, args.beta2, args.epsilon],
+                "nadam": [args.learning_rate, args.beta1, args.beta2, args.epsilon]
             }
-            args.batch_size = best_model_config["batch_size"]
-            args.epochs = best_model_config["epochs"]
-            data = dataset(args.dataset, batch_size=args.batch_size)            
-            optim_params = [best_model_config["learning_rate"], args.beta1, args.beta2, args.epsilon]
-            Layers = [784];[Layers.append(best_model_config["hidden_size"]) for _ in range(best_model_config["num_layers"])];Layers.append(num_classes)
 
-
-            Model = MLP(Layers = Layers, optim=best_model_config["optimizer"], optim_param= optim_params, weight_init = best_model_config["weight_init"],\
-                wd = best_model_config["weight_decay"], activation=best_model_config["activation"])
+            Model = MLP(Layers = Layers, optim=args.optimizer, optim_param=optim_params[args.optimizer], weight_init = args.weight_init,\
+                wd = args.weight_decay, activation=args.activation)
                 
             Model.summary()
             
-            cm = train(Model, data ,loss_dict["cross_entropy"], best_model_config["optimizer"], args = args, confusion=True)
+            cm = train(Model, data ,loss_dict["cross_entropy"], args.optimizer, args = args, confusion=True)
 
             ### Confusion Matrix
 
@@ -297,41 +288,41 @@ if __name__ == "__main__":
             plt.figure(figsize=(12, 5))
             sn.heatmap(df_cm, annot=True)
             plt.show()
+            plt.savefig("./confusion.png")
             
         elif args.question == 8:
             run = wandb.init(project=args.wandb_project)
             wandb.run.name = "question-8"
-            best_model_config = {
-                "hidden_size": 64,
-                "activation": "relu",
-                "num_layers": 4,
-                "epochs": 10,
-                "weight_decay": 0.0,
-                "weight_init": "random", ## Xavier problem
-                "optimizer": "adam",
-                "learning_rate": 0.001,
-                "batch_size": 32
+            optim_params = {
+                "sgd": [args.learning_rate],
+                "momentum": [args.learning_rate, args.momentum],
+                "nag": [args.learning_rate, args.momentum],
+                "rmsprop": [args.learning_rate, args.beta, args.epsilon],
+                "adam": [args.learning_rate, args.beta1, args.beta2, args.epsilon],
+                "nadam": [args.learning_rate, args.beta1, args.beta2, args.epsilon]
             }
-            args.batch_size = best_model_config["batch_size"]
-            args.epochs = best_model_config["epochs"]
+
             data = dataset(args.dataset, batch_size=args.batch_size)            
-            optim_params = [best_model_config["learning_rate"], args.beta1, args.beta2, args.epsilon]
-            Layers = [784];[Layers.append(best_model_config["hidden_size"]) for _ in range(best_model_config["num_layers"])];Layers.append(num_classes)
 
-            Model_2 = MLP(Layers = Layers, optim=best_model_config["optimizer"], optim_param= optim_params, weight_init = best_model_config["weight_init"],\
-                wd = best_model_config["weight_decay"], activation=best_model_config["activation"])
+            Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
 
-            Model_1 = MLP(Layers = Layers, optim=best_model_config["optimizer"], optim_param= optim_params, weight_init = best_model_config["weight_init"],\
-                wd = best_model_config["weight_decay"], activation=best_model_config["activation"])
-            args.epochs = 1
+            Model_2 = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init,\
+                wd = args.weight_decay, activation=args.activation)
+
+            Model_1 = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init,\
+                wd = args.weight_decay, activation=args.activation)
             val_mse, val_cross = [], []
-            for epochs in range(best_model_config['epochs']):
+            epochs = args.epochs
+            args.epochs = 1
+            for epochs in range(epochs):
 
-                val_mse.append(train(Model_2, data ,loss_dict["mean_squared_error"], best_model_config["optimizer"], args=args, log=False))
-                val_cross.append(train(Model_1, data ,loss_dict["cross_entropy"], best_model_config["optimizer"], args= args, log=False))
+                val_mse.append(train(Model_2, data ,loss_dict["mean_squared_error"], args.optimizer, args=args, log=False))
+                val_cross.append(train(Model_1, data ,loss_dict["cross_entropy"], args.optimizer, args= args, log=False))
+            print(len(val_mse))
+            print(len(val_cross))
             wandb.log({
                 "mse vs crossentropy": wandb.plot.line_series(
-                xs = list(range(best_model_config["epochs"])),
+                xs = list(range(1, epochs+1)),
                 ys = [val_mse, val_cross],
                 keys=["mse", "cross_entropy"],
                 title = "mse vs cross_entropy",
