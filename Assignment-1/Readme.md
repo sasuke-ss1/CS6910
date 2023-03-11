@@ -241,4 +241,8 @@ The plots for the same can be found in the wandb report submitted.
 
 ## Question 9 and 10
 
-For the most significant 3 hyperparameters that I would like to tune on MNIST given my observations of Fashion-MNIST would be learning_rate, hidden_size and number_of_hidden_layer. I will choose relu activation as the my best val_accuracy runs were completely dominated by relu, I would also choose nadam as my optimizer as it also performed better for val accuracy accross all the runs, batch_size doesnt matter much as we found from the experiments, it also determines the speed of convergence as leeser the batch size, more the training and lesser the epcohs in general, so I will choose batch_size to be 128 also for the experiments it seems that weight initializations also doesnt matter much. Hence I will seacrh for learning_rate, hidden_size, and number_of_hidden_layers.
+For the most significant 3 hyperparameters that I would like to tune on MNIST given my observations of Fashion-MNIST would be learning_rate, hidden_size and number_of_hidden_layer.
+
+I will choose relu activation as the my best val_accuracy runs were completely dominated by relu, I would also choose nadam as my optimizer as it also performed better for val accuracy accross all the runs.
+
+Batch_size doesnt matter much as we found from the experiments, it also determines the speed of convergence as leeser the batch size, more the training and lesser the epcohs in general, so I will choose batch_size to be 128 also for the experiments it seems that weight initializations also doesnt matter much. Hence I will seacrh for learning_rate, hidden_size, and number_of_hidden_layers.

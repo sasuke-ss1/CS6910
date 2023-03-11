@@ -286,9 +286,10 @@ if __name__ == "__main__":
 
             df_cm = pd.DataFrame(cm, index = range(1, len(cm)+1), columns = range(1, len(cm) + 1))
             plt.figure(figsize=(12, 5))
-            sn.heatmap(df_cm, annot=True)
+            tmp = sn.heatmap(df_cm, annot=True)
+            fig = tmp.get_figure()
+            fig.savefig("./confusion.png", dpi=400)
             plt.show()
-            plt.savefig("./confusion.png")
             
         elif args.question == 8:
             run = wandb.init(project=args.wandb_project)
