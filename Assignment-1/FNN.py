@@ -75,4 +75,8 @@ class MLP():
                 #print(self.outs[i+1].shape)
                 self.optim(layer, layer.delta@self.outs[i] + self.wd*layer.w, np.sum(layer.delta, axis=1))
     
- 
+    def get_norm(self):
+        norm = 0
+        for layer in self.network:
+            norm += np.linalg.norm(layer.w)
+        return norm

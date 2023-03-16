@@ -39,7 +39,7 @@ def train(model, dataset, loss, optim, args, confusion =False, log=True):
             if images.shape[0] == 0:
                 continue
             y_pred = model.forward(images)
-            train_loss_batch.append(loss(y_pred, labels))
+            train_loss_batch.append(loss(y_pred, labels) + args.weight_decay*model.get_norm())
             accu_train_batch.append(get_accuracy(y_pred, labels))
             model.backward(labels)
             if optim == "nag":
@@ -348,6 +348,6 @@ if __name__ == "__main__":
 
         Model = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init, wd = args.weight_decay, activation=args.activation)
         Model.summary()
-        
+
         train(Model, data ,loss_dict[args.loss], args.optimizer, args = args)
 
