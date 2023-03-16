@@ -124,7 +124,7 @@ def train_wb():
     X_train, X_val, y_train_one_hot, y_val_one_hot , num_classes = dataset(args.dataset)
 
     Layers = [784];[Layers.append(config.hidden_size) for _ in range(config.num_layers)];Layers.append(num_classes)
-    model = MLP(Layers, config.activation, optim=config.optimizer, optim_param = optim_params[config.optimizer], weight_init=config.weight_init, wd=config.weight_decay)
+    model = MLP(Layers, config.activation, optim=config.optimizer, optim_param = optim_params[config.optimizer], weight_init=config.weight_init, wd=config.weight_decay, loss=config.losses)
     loss = CrossEntropy()
 
     train_data = list(zip(X_train, y_train_one_hot))
@@ -212,6 +212,7 @@ if __name__ == "__main__":
     parser.add_argument("--hidden_size", "-sz", default=64, type=int, help="Number of hidden neurons in a feedforward layer.")
     parser.add_argument("--activation", "-a", default="relu", type=str, help='choices: ["identity", "sigmoid", "tanh", "relu"]')
     parser.add_argument("--question", "-q", type=int, default=None, help="The Question Number you want to run")
+    parser.add_argument("--custom", "-c", type=bool, default=False, help="Create a neural network with differnt number of neurons in each layer")
 
     loss_dict = {
         "mean_squared_error": MSE(),
@@ -285,10 +286,20 @@ if __name__ == "__main__":
             ### Confusion Matrix
 
             df_cm = pd.DataFrame(cm, index = range(1, len(cm)+1), columns = range(1, len(cm) + 1))
-            plt.figure(figsize=(12, 5))
+            plt.figure(figsize=(12,12))
+            ax = plt.subplot()
             tmp = sn.heatmap(df_cm, annot=True)
+            ax.set_xlabel("Predicted Labels");ax.set_ylabel('True Labels')
+            ax.set_title("Confusion Matrix")
+
+            if args.dataset == "fashion_mnist":
+                class_mapping = {0: "T-shirt/top", 1: "Trouser", 2: "Pullover", 3: "Dress", 4: "Coat", 5: "Sandal", 6: "Shirt", 7: "Sneaker", 8: "Bag", 9: "Ankle boot"} 
+            else:
+                class_mapping = {i:str(i) for i in range(10)}
+            
+            ax.xaxis.set_ticklabels(list(class_mapping.values()));ax.yaxis.set_ticklabels(list(class_mapping.values()))
             fig = tmp.get_figure()
-            fig.savefig("./confusion.png", dpi=400)
+            fig.savefig("./confusion1.png", dpi=400)
             plt.show()
             
         elif args.question == 8:
@@ -343,8 +354,19 @@ if __name__ == "__main__":
             "adam": [args.learning_rate, args.beta1, args.beta2, args.epsilon],
             "nadam": [args.learning_rate, args.beta1, args.beta2, args.epsilon]
         }
+        '''
+        To use your own optimizer you need to add the name of the optimizer to the optim_params dictionary with
+        the corresponding parameters mapping (Note: The name must contain the substring 'custom'), you will also need to your write your optimizer implementaion in the class 'Your_Optimizer'.
+        There you would need to implement the __init__() function and then the __call__() function.
+        If your optimizer uses nestrov acceleration then you need to write your name is optimizer name should start with nag.(Note: If you are using nag then please define the momentum parameter as beta)
 
+        If you did everything correctly then you should be able to call your implemntaion my using the optimizer command line input with the name of your optimizer.
+        '''
         Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
+
+        if args.custom:
+            print(f"Please inputs neuron sizes for the {args.num_layers} hidden_layers by pressing ENTER after every input")
+            Layers = [784];[Layers.append(int(input())) for _ in range(args.num_layers)];Layers.append(num_classes)    
 
         Model = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init, wd = args.weight_decay, activation=args.activation)
         Model.summary()

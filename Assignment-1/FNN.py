@@ -30,6 +30,8 @@ class MLP():
             self.optim = Adam(*optim_param)
         elif optim == "nadam":
             self.optim = NAdam(*optim_param)
+        elif "custom" in optim:
+            self.optim = Your_Optimizer(*optim_param)
         else:
             raise NotImplementedError
             
@@ -56,7 +58,7 @@ class MLP():
             self.network[i].delta = (self.network[i+1].w.T@self.network[i+1].delta)*self.network[i].activation.grad().T
 
     def step(self, y_true = None):
-        if self.opt == "nag":
+        if self.opt.startswith("nag"):
             beta = self.optim.beta
             for i,  layer in enumerate(self.network):
                 layer.w -= beta*layer.u_w

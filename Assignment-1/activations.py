@@ -45,10 +45,4 @@ class Softmax():
     def grad(self, y_true):
         pass
 
-class Your_activaiton():
-    def __call__(self, x):
-        pass
-
-    def grad(self):
-        pass
 

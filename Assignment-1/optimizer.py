@@ -104,3 +104,8 @@ class NAdam():
 
         layer.t += 1
 
+class Your_Optimizer():
+    def __init__(self, params):
+        pass
+    def __call__(self, layer, grad_w, grad_b):
+        pass

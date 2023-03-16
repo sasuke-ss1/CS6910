@@ -37,8 +37,4 @@ class Linear():
         
 
     def __call__(self, x):
-        N = x.shape[0]
         return self.activation(x@self.w.T+self.b)
-
-    def backward(self, x):
-        pass

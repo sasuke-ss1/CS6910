@@ -23,3 +23,5 @@ parameters:
       values: [3, 4, 5]
     hidden_size:
       values: [32, 64]
+    losses:
+      values: ["cross_entropy", "mean_squared_error"]
