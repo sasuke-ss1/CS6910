@@ -197,7 +197,7 @@ def train_wb():
 if __name__ == "__main__":
     parser = ArgumentParser()
     ## wandb.ai agg arguments
-    parser.add_argument("--wandb_project", "-wp", default="assignment1", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
+    parser.add_argument("--wandb_project", "-wp", default="Asng1", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
     parser.add_argument("--wandb_entity", "-we", default="sasuke", type=str, help="Wandb Entity used to track experiments in the Weights & Biases dashboard.")
     parser.add_argument("--dataset", "-d", default="fashion_mnist", type=str, help='choices: ["mnist", "fashion_mnist"]') ## "" in string
     parser.add_argument("--epochs", "-e", default=10, type=int, help="Number of epochs to train neural network.")
@@ -323,10 +323,10 @@ if __name__ == "__main__":
             Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
 
             Model_2 = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init,\
-                wd = args.weight_decay, activation=args.activation, loss=loss_dict["mean_squared_error"])
+                wd = args.weight_decay, activation=args.activation, loss="mean_squared_error")
 
             Model_1 = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init,\
-                wd = args.weight_decay, activation=args.activation, loss=loss_dict["cross_entropy"])
+                wd = args.weight_decay, activation=args.activation, loss="cross_entropy")
             val_mse, val_cross = [], []
             epochs = args.epochs
             args.epochs = 1
@@ -372,7 +372,7 @@ if __name__ == "__main__":
             print(f"Please inputs neuron sizes for the {args.num_layers} hidden_layers by pressing ENTER after every input")
             Layers = [784];[Layers.append(int(input())) for _ in range(args.num_layers)];Layers.append(num_classes)    
 
-        Model = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init, wd = args.weight_decay, activation=args.activation, loss=loss_dict[args.loss])
+        Model = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init, wd = args.weight_decay, activation=args.activation, loss=args.loss)
         Model.summary()
 
         train(Model, data ,loss_dict[args.loss], args.optimizer, args = args)
