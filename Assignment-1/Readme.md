@@ -246,7 +246,7 @@ My best validation set accuracy was __88.24%__ across all the runs.
 - It can also be seen that adaptive gradient optimizers are consistently outperforming SGD, Momentum and NAG.
 Clearly, due to their ineffective ability to learn within a finite number of epochs, stochastic gradient descent (SGD), momentum gradient descent, and Nesterov all performed less than optimally due to the poor learning rates of 1e-3/1e-4.
 - I found that SGD could reach  more than 85% accuracy with learning_rate set to a much more modest 0.1 on the otherwise same default values that gave the best accuracy.
-- After a point the model starts to over fit and so to gain 95% accuracy we can decrease the model complexity and we could also play around with the betas of nadam, adam, rmsprop as through extensive experiments we have shown that these matters the most.
+- After a point the model starts to over fit and so to gain 95% accuracy we can decrease the model complexity and we could also play around with the betas of nadam, adam, rmsprop as through extensive experiments we have shown that these matters the most. I would also suggest to add dropouts and early stopping, switching to convolution neural network will also help, because we can see that the model is able to extract the coarse features but is having problem in detecting finer features, this could be because in the faltten operation we are technically destroying the structure of image and hence the finer details of the image, where as in CNN we dont need to do any of that.  
 - Some early runs that had accuracy in the __10%__ region can be attributed to the weight decay set very high, which didnt allow the model to fit the data properly.
 
 ## Question 7

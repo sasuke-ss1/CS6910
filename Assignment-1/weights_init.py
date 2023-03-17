@@ -5,7 +5,7 @@ def random(fout, fin):
 
 def xavier(fout, fin):
     lim = np.sqrt(6/float(fin+fout))
-    return  0.1*np.random.uniform(-lim, lim, size=(fout, fin))
+    return  np.random.uniform(-lim, lim, size=(fout, fin))
 
 
 if __name__ == "__main__":

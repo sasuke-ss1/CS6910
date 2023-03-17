@@ -319,10 +319,10 @@ if __name__ == "__main__":
             Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
 
             Model_2 = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init,\
-                wd = args.weight_decay, activation=args.activation)
+                wd = args.weight_decay, activation=args.activation, loss=loss_dict["mean_squared_error"])
 
             Model_1 = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init,\
-                wd = args.weight_decay, activation=args.activation)
+                wd = args.weight_decay, activation=args.activation, loss=loss_dict["cross_entropy"])
             val_mse, val_cross = [], []
             epochs = args.epochs
             args.epochs = 1
@@ -368,7 +368,7 @@ if __name__ == "__main__":
             print(f"Please inputs neuron sizes for the {args.num_layers} hidden_layers by pressing ENTER after every input")
             Layers = [784];[Layers.append(int(input())) for _ in range(args.num_layers)];Layers.append(num_classes)    
 
-        Model = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init, wd = args.weight_decay, activation=args.activation)
+        Model = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init, wd = args.weight_decay, activation=args.activation, loss=loss_dict[args.loss])
         Model.summary()
 
         train(Model, data ,loss_dict[args.loss], args.optimizer, args = args)
