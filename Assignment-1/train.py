@@ -148,7 +148,7 @@ def train_wb():
             if images.shape[0] == 0:
                 continue
             y_pred = model.forward(images)
-            train_loss_batch.append(loss(y_pred, labels))
+            train_loss_batch.append(loss(y_pred, labels) + config.weight_decay*model.get_norm())
             accu_train_batch.append(get_accuracy(y_pred, labels))
             model.backward(labels)
             if config.optimizer == "nag":
