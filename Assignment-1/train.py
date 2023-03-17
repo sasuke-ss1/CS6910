@@ -86,6 +86,10 @@ def train(model, dataset, loss, optim, args, confusion =False, log=True):
 
 
 def train_wb():
+    loss_dict = {
+        "mean_squared_error": MSE(),
+        "cross_entropy": CrossEntropy()
+    }
     run = wandb.init()
     config = wandb.config
     wandb.run.name = "e_{}_hl_{}_opt_{}_bs_{}_init_{}_ac_{}".format(config.epochs,config.hidden_size,config.optimizer, \
@@ -125,7 +129,7 @@ def train_wb():
 
     Layers = [784];[Layers.append(config.hidden_size) for _ in range(config.num_layers)];Layers.append(num_classes)
     model = MLP(Layers, config.activation, optim=config.optimizer, optim_param = optim_params[config.optimizer], weight_init=config.weight_init, wd=config.weight_decay, loss=config.losses)
-    loss = CrossEntropy()
+    loss = loss_dict[config.losses]
 
     train_data = list(zip(X_train, y_train_one_hot))
     val_data = list(zip(X_val, y_val_one_hot))
