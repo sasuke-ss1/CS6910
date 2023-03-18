@@ -1,6 +1,0 @@
-/home/sasuke/repos/CS6910/Assignment-1/loss.py:11: RuntimeWarning: divide by zero encountered in log
-  return np.mean(np.sum((-1.0 * np.multiply(y_true, np.log(y_pred))), axis=1))
-/home/sasuke/repos/CS6910/Assignment-1/loss.py:11: RuntimeWarning: invalid value encountered in multiply
-  return np.mean(np.sum((-1.0 * np.multiply(y_true, np.log(y_pred))), axis=1))
-10
-10

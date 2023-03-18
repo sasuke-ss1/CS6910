@@ -197,11 +197,11 @@ def train_wb():
 if __name__ == "__main__":
     parser = ArgumentParser()
     ## wandb.ai agg arguments
-    parser.add_argument("--wandb_project", "-wp", default="Asng1", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
+    parser.add_argument("--wandb_project", "-wp", default="assing1", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
     parser.add_argument("--wandb_entity", "-we", default="sasuke", type=str, help="Wandb Entity used to track experiments in the Weights & Biases dashboard.")
     parser.add_argument("--dataset", "-d", default="fashion_mnist", type=str, help='choices: ["mnist", "fashion_mnist"]') ## "" in string
     parser.add_argument("--epochs", "-e", default=10, type=int, help="Number of epochs to train neural network.")
-    parser.add_argument("--batch_size", "-b", default=128, type=int,  help="Batch size used to train neural network.")
+    parser.add_argument("--batch_size", "-b", default=512, type=int,  help="Batch size used to train neural network.")
     parser.add_argument("--loss", "-l", default="cross_entropy", type=str, help='choices: ["mean_squared_error", "cross_entropy"]')
     parser.add_argument("--optimizer", "-o", default="nadam", type=str, help='choices: ["sgd", "momentum", "nag", "rmsprop", "adam", "nadam"]')
     parser.add_argument("--learning_rate", "-lr", default=0.001, type=float, help="Learning rate used to optimize model parameters")
@@ -210,8 +210,8 @@ if __name__ == "__main__":
     parser.add_argument("--beta1", "-beta1", default=0.5, type=float, help="Beta1 used by adam and nadam optimizers.")
     parser.add_argument("--beta2", "-beta2", default=0.5, type=float, help="Beta2 used by adam and nadam optimizers.")
     parser.add_argument("--epsilon", "-eps", default=0.000001, type=float, help="Epsilon used by optimizers.")
-    parser.add_argument("--weight_decay", "-w_d", default=0.0005, type=float, help="Weight decay used by optimizers.")
-    parser.add_argument("--weight_init", "-w_i", default="random", type=str, help='choices: ["random", "xavier"]')
+    parser.add_argument("--weight_decay", "-w_d", default=0.0, type=float, help="Weight decay used by optimizers.")
+    parser.add_argument("--weight_init", "-w_i", default="xavier", type=str, help='choices: ["random", "xavier"]')
     parser.add_argument("--num_layers", "-nhl", default=5, type=int, help="Number of hidden layers used in feedforward neural network.")
     parser.add_argument("--hidden_size", "-sz", default=64, type=int, help="Number of hidden neurons in a feedforward layer.")
     parser.add_argument("--activation", "-a", default="relu", type=str, help='choices: ["identity", "sigmoid", "tanh", "relu"]')
@@ -266,9 +266,13 @@ if __name__ == "__main__":
             wandb.agent(sweep_id, function=train_wb)
 
         elif args.question in [5, 6]:
-            print("Please Check the Readme and my wandb assignment page")
+            raise ValueError ("Please Check the Readme and my wandb assignment page")
 
-        elif args.question == 7:
+        elif args.question in [7, 10]:
+            wandb.init(project=args.wandb_project)
+            wandb.run.name = f"question-{args.question}"
+            args.dataset = "mnist" if args.question == 10 else "fashion_mnist"
+
             data = dataset(args.dataset, batch_size=args.batch_size, test=True)            
             Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
             optim_params = {
@@ -303,7 +307,8 @@ if __name__ == "__main__":
             
             ax.xaxis.set_ticklabels(list(class_mapping.values()));ax.yaxis.set_ticklabels(list(class_mapping.values()))
             fig = tmp.get_figure()
-            fig.savefig("./confusion1.png", dpi=400)
+            wandb.log({f"Question-{args.question}": wandb.Image(fig)})
+            fig.savefig("./confusion0.png", dpi=400)
             plt.show()
             
         elif args.question == 8:
@@ -318,7 +323,7 @@ if __name__ == "__main__":
                 "nadam": [args.learning_rate, args.beta1, args.beta2, args.epsilon]
             }
 
-            data = dataset(args.dataset, batch_size=args.batch_size)            
+            data = dataset("mnist", batch_size=args.batch_size)            
 
             Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
 
@@ -345,7 +350,8 @@ if __name__ == "__main__":
                 xname = "epochs"
                 )
             })
-
+        else:
+            raise NotImplemented
 
 
 
