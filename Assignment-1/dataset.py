@@ -7,12 +7,11 @@ def dataset(name, num_features = 784, batch_size = 128, test=False):
         (X, y) , (X_test, y_test) = mnist.load_data()
     elif name == "fashion_mnist":
         (X, y) , (X_test, y_test) = fashion_mnist.load_data()
-    X
+        
     X = X.reshape(X.shape[0], num_features)/255.0
     X_test = X_test.reshape(X_test.shape[0], num_features)
 
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.1, random_state=42)
-### Copied
     M = X_train.shape[0]
 
     Mval = X_val.shape[0]
@@ -49,7 +48,6 @@ def dataset(name, num_features = 784, batch_size = 128, test=False):
     return X_train, X_val, y_train_one_hot, y_val_one_hot , num_classes
 
 if __name__ == "__main__":
-    #dataset("mnist")
     X_train, X_val, y_train_one_hot, y_val_one_hot , num_classes = dataset("fashion_mnist")
 
     dat = zip(X_train, y_train_one_hot)
