@@ -156,15 +156,9 @@ def train_wb():
             else:
                 model.step()
         
-
-        #print(accu_train_batch[-1])
-        
         epoch_train_losses.append(sum(train_loss_batch)/len(train_loss_batch))
         accu_train_epoch.append(sum(accu_train_batch)/len(accu_train_batch))
-        #print(f"Train Epoch Loss: {epoch_train_losses[-1]}")
-        #print(f"Train Accuracy: {accu_train_epoch[-1]}")
 
-        #print("Running Validation")
 
         for idx, (images, labels) in enumerate(val_data):
             if images.shape[0] == 0:
@@ -177,9 +171,6 @@ def train_wb():
         
         epoch_val_losses.append(sum(val_loss_batch)/len(val_loss_batch))
         accu_val_epoch.append(sum(accu_val_batch)/len(accu_val_batch))
-        #print(f"Val Epoch Loss: {epoch_val_losses[-1]}")
-        #print(f"Val Accuracy: {accu_val_epoch[-1]}")
-        #print("\n\n")
 
         wandb.log(  
                     {
@@ -227,17 +218,11 @@ if __name__ == "__main__":
     data = dataset(args.dataset, batch_size=args.batch_size)
     
     num_classes = 10
-    #Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
 
     if args.question:
         wandb.login(key="e99813e81e3838e6607d858a20693d589933495f")
         with open("./sweep.yml", "r") as f:
             sweep_config = yaml.safe_load(f)
-        
-        # wandb.init(project=args.wandb_project)
-
-        
-
         
         #question 1
         if args.question == 1:
@@ -351,7 +336,7 @@ if __name__ == "__main__":
                 )
             })
         else:
-            raise NotImplemented
+            raise ValueError("No such Quesition")
 
 
 
@@ -362,7 +347,8 @@ if __name__ == "__main__":
             "nag": [args.learning_rate, args.momentum],
             "rmsprop": [args.learning_rate, args.beta, args.epsilon],
             "adam": [args.learning_rate, args.beta1, args.beta2, args.epsilon],
-            "nadam": [args.learning_rate, args.beta1, args.beta2, args.epsilon]
+            "nadam": [args.learning_rate, args.beta1, args.beta2, args.epsilon],
+            "nag_custom_your_optim": [args.learning_rate]
         }
         '''
         To use your own optimizer you need to add the name of the optimizer to the optim_params dictionary with

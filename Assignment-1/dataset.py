@@ -43,8 +43,6 @@ def dataset(name, num_features = 784, batch_size = 128, test=False):
     X_val = np.array_split(X_val, batch_size)
     y_val_one_hot = np.array_split(y_val_one_hot, batch_size)    
 
-    #print(X_train[1].shape, y_train_one_hot[1].shape)
-    #print(len(X_train))
     if test:
         return X_train, X_test, y_train_one_hot, y_test_one_hot, num_classes
 

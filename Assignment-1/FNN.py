@@ -59,6 +59,7 @@ class MLP():
 
     def step(self, y_true = None):
         if self.opt.startswith("nag"):
+            sys.exit()
             beta = self.optim.beta
             for i,  layer in enumerate(self.network):
                 layer.w -= beta*layer.u_w

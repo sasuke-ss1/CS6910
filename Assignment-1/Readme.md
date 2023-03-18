@@ -35,6 +35,36 @@ python train.py
 
 Note: If Question number is specified the ``` train.py ``` will run the code for the intended question if someone has to try some random configuration then they can runt ``` python train.py ``` with the required command line arguments specified
 
+The main driver code with instructions to add custom optimizer is given below:
+``` python 
+optim_params = {
+    "sgd": [args.learning_rate],
+    "momentum": [args.learning_rate, args.momentum],
+    "nag": [args.learning_rate, args.momentum],
+    "rmsprop": [args.learning_rate, args.beta, args.epsilon],
+    "adam": [args.learning_rate, args.beta1, args.beta2, args.epsilon],
+    "nadam": [args.learning_rate, args.beta1, args.beta2, args.epsilon]
+}
+'''
+To use your own optimizer you need to add the name of the optimizer to the optim_params dictionary with
+the corresponding parameters mapping (Note: The name must contain the substring 'custom'), you will also need to your write your optimizer implementaion in the class 'Your_Optimizer'.
+There you would need to implement the __init__() function and then the __call__() function.
+If your optimizer uses nestrov acceleration then you need to write your name is optimizer name should start with nag.(Note: If you are using nag then please define the momentum parameter as beta)
+
+If you did everything correctly then you should be able to call your implemntaion my using the optimizer command line input with the name of your optimizer.
+'''
+Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
+
+if args.custom:
+    print(f"Please inputs neuron sizes for the {args.num_layers} hidden_layers by pressing ENTER after every input")
+    Layers = [784];[Layers.append(int(input())) for _ in range(args.num_layers)];Layers.append(num_classes)    
+
+Model = MLP(Layers = Layers, optim=args.optimizer, optim_param= optim_params[args.optimizer], weight_init = args.weight_init, wd = args.weight_decay, activation=args.activation, loss=args.loss)
+Model.summary()
+
+train(Model, data ,loss_dict[args.loss], args.optimizer, args = args)
+```
+
 
 ## Question 1
 
