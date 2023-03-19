@@ -247,7 +247,7 @@ Wandb's sweep function runs a function defined by the user and logs the quantiti
 
 We made a ``` sweep.yml ``` file to specify all the parameters for wandb and then we defined a ``` train_wb() ``` function which is used by wandb for hyperparameter search.
 
-I first tried using the grid search strategy for wandb but quickly realized that it has exponential time complexity and it will take forever to run through all the possible choices of hyperparameters, so from there after analyzing the results of the grid search I reduced my hyperparameter search space and used bayesian search strategy.
+I initially tried using the grid search strategy for wandb but quickly realized that it has exponential time complexity and will take a very long time to go through all the options for hyperparameters. As a result, I reduced my hyperparameter search space and used the bayesian search strategy after looking at the grid search results.
 
 I choose bayesian because it actually considers the past history of hyperparameters(prior) selected before selecting the new set of hyperparameters.
 
@@ -266,9 +266,9 @@ The generated plots from wandb for both grid and bayes search can be found in th
 
 ## Question 5
 
-This is basically the plot of all models vs the accuracies they got, then plots can also be found in the report submitted, we see from this graph that the bayesian search was able to identify the optimal hyperparameters quite quickly and many models runs results in more 85% validation accuracy.
+This is basically the plot of all models vs the accuracies I got, we see from this graph that the bayesian search was able to identify the optimal hyperparameters quite quickly and many model runs, resulted in more than 85% validation accuracy.
 
-My best validation set accuracy was __88.29%__ across all the runs.
+My best __validation set__ accuracy was __88.72%__ across all the runs.
 
 ## Question 6
 - We see form the plot of question 5 that initially the model performance is not very good but as time passes it gets better and better, this behavior is expected from bayesian search as it updates its belief of good hyperparameters with every next run, and hence gets better at giving the optimal hyperparameters.
@@ -288,7 +288,7 @@ Clearly, due to their ineffective ability to learn within a finite number of epo
 Here we plot the confusion matrix, for this, we used the __confusion_matrix__ function from __sklearn__ library,
 we plot this for the best model found through a hyperparameter search in wandb.
 
-![alt text](https://github.com/sasuke-ss1/CS6910/blob/main/Assignment-1/confusion.png)
+![alt text](https://github.com/sasuke-ss1/CS6910/blob/main/Assignment-1/confusion7.png)
 
 As we can see that the model is able to predict very well for most classes but we can see that the model is not properly able to differentiate between coat, dress, pullover, and shirt which is reasonable as all of them are clothing, it can differentiate between shoes and clothes very well.
 
@@ -316,4 +316,4 @@ Here we see that our model performs very well on MNIST which is less complex tha
 
 From the confusion matrix plotted for the model that best fitted Fashion_MNIST trained on MNIST we see that the model didn't really get confused much here as learning only the coarse features of the image was sufficient to predict everything accurately.
 
-![alt text](https://github.com/sasuke-ss1/CS6910/blob/main/Assignment-1/confusion1.png)
+![alt text](https://github.com/sasuke-ss1/CS6910/blob/main/Assignment-1/confusion10.png)

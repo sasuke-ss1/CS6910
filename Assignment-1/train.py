@@ -1,12 +1,12 @@
 import numpy as np
 from FNN import MLP
 from dataset import dataset
+from sklearn.metrics import confusion_matrix
 from argparse import ArgumentParser
 from loss import *
 import sys
 import wandb
 import yaml
-from sklearn.metrics import confusion_matrix
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sn
@@ -275,7 +275,6 @@ if __name__ == "__main__":
             Model.summary()
             
             cm = train(Model, data ,loss_dict["cross_entropy"], args.optimizer, args = args, confusion=True)
-
             ### Confusion Matrix
 
             df_cm = pd.DataFrame(cm, index = range(1, len(cm)+1), columns = range(1, len(cm) + 1))
@@ -293,7 +292,7 @@ if __name__ == "__main__":
             ax.xaxis.set_ticklabels(list(class_mapping.values()));ax.yaxis.set_ticklabels(list(class_mapping.values()))
             fig = tmp.get_figure()
             wandb.log({f"Question-{args.question}": wandb.Image(fig)})
-            fig.savefig("./confusion0.png", dpi=400)
+            fig.savefig(f"./confusion{args.question}.png", dpi=400)
             plt.show()
             
         elif args.question == 8:
