@@ -17,7 +17,7 @@ parser = ArgumentParser()
 parser.add_argument("--wandb_project", "-wp", default="test", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
 parser.add_argument("--wandb_entity", "-we", default="sasuke", type=str, help="Wandb Entity used to track experiments in the Weights & Biases dashboard.")
 parser.add_argument("--batch_size", "-b", default=64, type=int, help="Batch size used to train neural network.")
-parser.add_argument("--question", "-q", type=int, default=None, help="The Question Number you want to run")
+parser.add_argument("--question", "-q", type=int, default=None, help="Set True to run wandb experiments")
 parser.add_argument("--lr", "-lr", type=float, default=1e-3, help="Learning rate used to optimize model parameters")
 parser.add_argument("--epochs", "-e", default=20, type=int, help="Number of epochs to train neural network.")
 parser.add_argument("--num_filters", "-nf", default = 32, type=int, help="Base number of filters")
@@ -25,13 +25,14 @@ parser.add_argument("--filter_org", "-fo", type=str, default="const", help="Stra
 parser.add_argument("--activation", "-a", type=str, default="ReLU", help="Activation function after each layer")
 parser.add_argument("--dropout", "-d", type=float, default=0.3, help="Dropout probability value for each layer")
 parser.add_argument("--batch_norm", "-bn", type=bool, default=False, help="Set true to apply batch norm to every layer.")
+parser.add_argument("--parent_dir", "-p", type=str, default="./nature_12K", help="Path to the parent directory of the dataset.")
 
 args = parser.parse_args()
 
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-parent_dir = "./nature_12K"
+parent_dir = args.parent_dir
 batch_size = args.batch_size
 lr = args.lr
 epochs = args.epochs
