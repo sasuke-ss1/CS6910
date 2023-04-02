@@ -12,8 +12,9 @@ class NatureData(Dataset):
         self.train_dir = os.path.join(dir, "train")
         self.test_dir = os.path.join(dir ,"val")
         self.transforms = transforms
+
         self.classes = list(map(lambda x: x.split("/")[-1], glob(self.train_dir + "/*")))
-        self.idx = [i for i in range(len(self.classes))]
+        self.idx = list(range(len(self.classes)))
         self.train = train
         self.cltoidx = dict(zip(self.classes, self.idx))
 
@@ -34,7 +35,7 @@ class NatureData(Dataset):
         else:
             path = self.test_img_path[idx]
         index = self.cltoidx[path.split("/")[-2]]
-        img = Image.open(path).convert('RGB').resize((150, 150))
+        img = Image.open(path).convert('RGB')
         label = index
 
         if self.transforms:
