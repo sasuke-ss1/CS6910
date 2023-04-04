@@ -14,12 +14,12 @@ from argparse import ArgumentParser
 
 parser = ArgumentParser()
 
-parser.add_argument("--wandb_project", "-wp", default="test", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
+parser.add_argument("--wandb_project", "-wp", default="test-1", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
 parser.add_argument("--wandb_entity", "-we", default="sasuke", type=str, help="Wandb Entity used to track experiments in the Weights & Biases dashboard.")
 parser.add_argument("--batch_size", "-b", default=128, type=int, help="Batch size used to train neural network.")
 parser.add_argument("--question", "-q", type=int, default=None, help="Set True to run wandb experiments")
 parser.add_argument("--lr", "-lr", type=float, default=1e-3, help="Learning rate used to optimize model parameters")
-parser.add_argument("--epochs", "-e", default=30, type=int, help="Number of epochs to train neural network.")
+parser.add_argument("--epochs", "-e", default=10, type=int, help="Number of epochs to train neural network.")
 parser.add_argument("--num_filters", "-nf", default = 32, type=int, help="Base number of filters")
 parser.add_argument("--filter_org", "-fo", type=str, default="const", help="Stratergy for depth of each layer's activation")
 parser.add_argument("--activation", "-a", type=str, default="ReLU", help="Activation function after each layer")
@@ -71,7 +71,7 @@ def train():
     print("Training begins\n")
 
     if args.filter_org != "const":
-        filters = [3] + [int(args.num_filters*2**i) if args.filter_org == "double" else args.num_filters//2**(-i) for i in range(5)]
+        filters = [3] + [int(args.num_filters*2**i) if args.filter_org == "double" else int(args.num_filters*2**(-i)) for i in range(5)]
     else:
         filters = [3] + 5*[args.num_filters]
 
@@ -130,9 +130,9 @@ def train_wb():
     torch.backends.cudnn.benchmark = True
 
     filter_size = [int(i) for i in config.filter_size.split(",")]
-
+    
     if config.filter_org != "const":
-        filters = [3] + [int(config.num_filters*2**i) if config.filter_org == "double" else config.num_filters//2**(-i) for i in range(5)]
+        filters = [3] + [int(config.num_filters*2**i) if config.filter_org == "double" else int(config.num_filters2**(-i)) for i in range(5)]
     else:
         filters = [3] + 5*[config.num_filters]
 
@@ -193,7 +193,7 @@ if __name__ == "__main__":
             sweep_config = yaml.safe_load(f)
     
         sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)    
-        wandb.agent(sweep_id, function=train_wb)
+        wandb.agent(sweep_id, function=train_wb, count = 50)
 
     else:
         train()
