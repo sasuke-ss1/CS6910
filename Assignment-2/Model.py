@@ -4,13 +4,17 @@ import torch.nn.functional as F
 from torchvision.models import resnet50
 
 class Model(nn.Module):
-    def __init__(self, num_filters, filter_size, pool_size, activation, img_shape=150, dropout=None, batch_norm=False):
+    def __init__(self, num_filters, filter_size, pool_size, activation, img_shape=224, dropout=None, batch_norm=False, num_classes=10):
         super().__init__()
+        if len(filter_size) == 1:
+            filter_size = 5*[filter_size[0]]
         layers = [];dim = img_shape
         for i in range(5):
-            layers.append(convActPool(num_filters[i], num_filters[i+1], filter_size, pool_size,activation))
-            dim = (dim - (pool_size - 1) - 1)//pool_size + 1
-        layers.append(nn.Flatten())
+            layers.append(convActPool(num_filters[i], num_filters[i+1], filter_size[i], pool_size, activation))
+            dim = dim + 2-(filter_size[i]-1)
+            dim = (dim - (2-1)-1)//2 + 1
+        
+        layers.append(nn.Flatten())    
         layers.append(nn.Linear(dim*dim*num_filters[-1], 10))
         
         self.logits = nn.Sequential(*layers)
@@ -23,7 +27,7 @@ class Model(nn.Module):
 class convActPool(nn.Module):
     def __init__(self, in_channel, out_channel, kernel_size, pool_size, activation, dropout=None, batch_norm=False):
         super().__init__()
-        conv = nn.Conv2d(in_channel, out_channel, kernel_size=kernel_size, padding="same")
+        conv = nn.Conv2d(in_channel, out_channel, kernel_size=kernel_size, padding=1)
         activation = getattr(nn, activation)()
         pool = nn.MaxPool2d(pool_size)
         layers = [conv, activation, pool]
