@@ -256,7 +256,7 @@ if __name__ == "__main__":
         elif args.question in [7, 10]:
             wandb.init(project=args.wandb_project)
             wandb.run.name = f"question-{args.question}"
-            args.dataset             print("Running Validation")= "mnist" if args.question == 10 else "fashion_mnist"
+            args.dataset = "mnist" if args.question == 10 else "fashion_mnist"
 
             data = dataset(args.dataset, batch_size=args.batch_size, test=True)            
             Layers = [784];[Layers.append(args.hidden_size) for _ in range(args.num_layers)];Layers.append(num_classes)
@@ -367,4 +367,3 @@ if __name__ == "__main__":
         Model.summary()
 
         train(Model, data ,loss_dict[args.loss], args.optimizer, args = args)
-
