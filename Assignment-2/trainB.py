@@ -7,13 +7,28 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 import sys
+from argparse import ArgumentParser
+import wandb
+import yaml
+
+parser = ArgumentParser()
+
+parser.add_argument("--wandb_project", "-wp", default="Asng-2", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
+parser.add_argument("--wandb_entity", "-we", default="sasuke", type=str, help="Wandb Entity used to track experiments in the Weights & Biases dashboard.")
+parser.add_argument("--batch_size", "-b", default=128, type=int, help="Batch size used to train neural network.")
+parser.add_argument("--question", "-q", type=bool, default=False, help="Set True to run wandb experiments")
+parser.add_argument("--lr", "-lr", type=float, default=1e-5, help="Learning rate used to optimize model parameters")
+parser.add_argument("--epochs", "-e", default=6, type=int, help="Number of epochs to train neural network.")
+parser.add_argument("--parent_dir", "-p", type=str, default="./nature_12K", help="Path to the parent directory of the dataset.")
+
+args = parser.parse_args()
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-parent_dir = "./nature_12K"
-batch_size = 128
-lr = 1e-3
-epochs = 20
+parent_dir = args.parent_dir
+batch_size = args.batch_size
+lr = args.lr
+epochs = args.epochs
 
 train_transform = transforms.Compose([
             transforms.RandomHorizontalFlip(p=0.5),
@@ -34,24 +49,22 @@ val_transform = transforms.Compose([
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
 
-data = NatureData(parent_dir, transforms=train_transform)
-train_data, val_data = random_split(data, [8000, 1999])
+train_data = NatureData(parent_dir, transforms=train_transform)
 test_data = NatureData(parent_dir, False, val_transform)
 
 train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size, num_workers=2)
-val_loader = DataLoader(val_data, batch_size=batch_size)
 test_loader = DataLoader(test_data, batch_size=batch_size)
 
 train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size, num_workers=2)
-val_loader = DataLoader(val_data, batch_size=batch_size)
 test_loader = DataLoader(test_data, batch_size=batch_size)
 
 loss_fn = CrossEntropyLoss()
 ResNet = get_resnet(10)
-optim = Adam(ResNet.parameters(), lr=lr)
+
 
 
 def train():
+    optim = Adam(ResNet.parameters(), lr=lr)
     torch.backends.cudnn.benchmark = True
     print("Training begins\n")
     ResNet.to(device)
@@ -80,18 +93,84 @@ def train():
         print("Running Validation")
 
         with torch.no_grad():
-            loop_obj = tqdm(val_loader)
-            avg_acc = []
-            ResNet.eval()        
+            loop_obj = tqdm(test_loader)
+            val_avg_loss, val_avg_acc = [], []        
+            ResNet.eval()
             for img, label in loop_obj:
                 img, label = img.to(device), label.to(device)
                 pred = ResNet(img)
+                loss = loss_fn(pred, label)
+                val_avg_loss.append(loss.item())
+                pred = torch.argmax(pred, dim=1)
+                accuracy = (pred == label).float().mean()
+                loop_obj.set_postfix_str(f"Loss: {loss.item():0.3f},  Accuracy: {accuracy:0.3f}")
+                val_avg_acc.append(accuracy)
+            print(f"Validation Loss in this Epoch: {sum(val_avg_loss)/len(val_avg_loss)}")
+            print(f"Validation Accuracy in this Epoch: {sum(val_avg_acc)/len(val_avg_acc)}")
+
+
+def train_wb():
+    run = wandb.init()
+    config = wandb.config
+    wandb.run.name = "lr_{}".format(config.lr)  
+    
+    torch.backends.cudnn.benchmark = True
+
+
+    lr = config.lr
+
+    ResNet.to(device)
+    optim = Adam(ResNet.parameters(), lr = lr)
+ 
+    for epoch in range(1, epochs+1):
+        loop_obj = tqdm(train_loader)
+        train_avg_loss, train_avg_acc = [], []
+        ResNet.train()
+        for img, label in loop_obj:
+            img, label = img.to(device), label.to(device)
+            loop_obj.set_description(f"Epoch: {epoch}")
+            optim.zero_grad()
+            pred = ResNet(img)
+            loss = loss_fn(pred, label)
+            loss.backward()
+            optim.step()
+            
+            with torch.no_grad():
+                train_avg_loss.append(loss.item())
+                accuracy = (torch.argmax(pred, dim=1) == label).float().mean()
+                train_avg_acc.append(accuracy)
+                loop_obj.set_postfix_str(f"Loss: {loss.item():0.3f}, Accuracy: {accuracy:0.3f}")
+
+        with torch.no_grad():
+            loop_obj = tqdm(test_loader)
+            val_avg_loss, val_avg_acc = [], []        
+            ResNet.eval()
+            for img, label in loop_obj:
+                img, label = img.to(device), label.to(device)
+                pred = ResNet(img)
+                loss = loss_fn(pred, label)
+                val_avg_loss.append(loss.item())
                 pred = torch.argmax(pred, dim=1)
                 accuracy = (pred == label).float().mean()
                 loop_obj.set_postfix_str(f"Accuracy: {accuracy:0.3f}")
-                avg_acc.append(accuracy)
-            print(f"Validation Accuracy in this Epoch: {sum(avg_acc)/len(avg_acc)}")
+                val_avg_acc.append(accuracy)
+
+        wandb.log({
+                    "train_loss": sum(train_avg_loss)/len(train_avg_loss),
+                    "train_accuracy": sum(train_avg_acc)/len(train_avg_acc),
+                    "test_loss": sum(val_avg_loss)/len(val_avg_loss),
+                    "test_accuracy": sum(train_avg_acc)/len(train_avg_acc)
+        })
 
 
 if __name__ == "__main__":
-    train()
+    if args.question:
+        wandb.login(key="e99813e81e3838e6607d858a20693d589933495f")
+        with open("./sweep2.yml", "r") as f:
+            sweep_config = yaml.safe_load(f)
+        
+        sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)    
+        wandb.agent(sweep_id, function=train_wb)
+        
+    else :
+        train()

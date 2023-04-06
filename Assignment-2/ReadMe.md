@@ -241,3 +241,58 @@ We get the best accuracy on the test set to be __43.4%__.
 
 Shown below are the 10 predictions of the model for 3 classes with the confidence of the model on each prediction also mentioned.
 
+# Part B
+
+## Question 1
+
+We are using __ResNet50__ for our finetune/tranfer learning needs, we notice that it was pretrained on images of shape 224x224 and hence will need images of the shame shape as inputs. Our images have varaible height and width but all are greater than 224, so we can simply resize it (224, 224) without much loss of information, or we can also do random cropping to augment and rescale oru images at the same time, both of these methods results in some loss of information.
+
+If we are rigid on passing high quality images(512, 512) with minimum rescalling, we can have a CNN before the input of the ResNet50 that takes 512x512 images as inputs and outputs 224x224 feature maps. Intution here is that the CNNs wil learn the proper "rescaling" for each image and then supply the images to the actuall model. To properly train this we could first fix the entire ResNet and only train the "rescaling" CNN for a few epochs and then fine tune the entire network.
+
+As for the output of linear layer, there are 1000 classes in IMAGENET dataset and we only need 10 output nodes as we have only 10 classes to predict. This can be done by changing the final linear layers output to 10 instead of 1000 and then train only the last layer while keeping the rest of the network fixed, or we can do the same thing as above and first train only the linear layer for a few epochs and then train the enitre network.
+
+We can also add another linear layer on top of the linear layer already present and then train the network according to the aformentioned stratergies.
+
+Code for the same:
+
+```python
+
+def get_resnet(num_classes, fineTune = True):
+    ResNet = resnet50(pretrained=True)
+    if fineTune:
+        for param in ResNet.parameters():
+            param.requires_grad = False
+
+    n_inputs = ResNet.fc.in_features
+
+    ResNet.fc = nn.Sequential(
+        nn.Linear(n_inputs,2048),
+        nn.ReLU(),
+        nn.Dropout(0.3),
+        nn.Linear(2048, num_classes)
+        )
+                
+        #return ResNet
+    
+    return ResNet
+
+```
+
+## Question 2
+
+In general the models used to finetuning/transfer learning are very big and take a lot of time and gpu usage to do any sensible amount of training. We propose some stratergies to finetune the model in a tractable manner:
+
+- We could first make all the parameters of the model untrainable and then add/replace the last linear layer to match our prediction specifications and only keep this last layer as trainable and start the training. This method really helps if you have a scarse amount of data as if you were to train the entire network to this data the model can severly overfit due to the massive number of paramters these model have.
+- If we have a bigger dataset we can unfreeze a few more last layers and train the model, one more thing that intuitively makes sense if that we should keep the learning rate for this smaller and smaller as we unfreeze more layers for training, as the model has converged for IMAGENET and our dataset which has classes similar to that of IMAGENET needs to only slighly adjust the weights to get the best results. This argumnet relies on the fact that the model was trained using a large number of data points and hence is already in a good local minima.
+- General heuristic is that model learn more general features that are useful for a wide range of tasks, while higher layers learn more task-specific features so one can do selective finetuneing. By selectively fine-tuning specific layers of the pre-trained model, we can quickly adapt the model to the new task, while minimizing the risk of overfitting or forgetting the knowledge learned during pre-training
+
+## Question 3 
+
+We are using the first of the aforementioned stratergy of only training the final Linear layer and use the ResNet backbone as a feature extractor:
+
+We observe the following:
+- We ran a wandb sweep over three different values of learning rate and we see that for all the different values of learning rate we are getting test accuracy of over __70%__ which is a significantly high when compared to the best "trained from scratch" accuracy which was only __43.4%__, this just goes to show the validtity of point 1 in the previous question, we didnt have sufficient data to learn a powerfull classifier from scratch, whereas finetuning the last layer required minimal data to give very goo d accuracies.
+- We see that the best finetune model was able to get __79-80%__ accuracy in only 10 epochs which is again a 4 time improvement from the scratch model which took 40 epochs to train. This result is also quite intuitive as the finetune model only needs to train a Linear layer where as for the scratch model we need to train the entire model which takes a lot of time.
+- We also see that 0.00001 learning rate performed the best among all possible choice this support point 2 in the above question as we used 0.0001 learning rate for scratch training.
+
+Below are the plots for the same:
