@@ -185,7 +185,7 @@ def train_wb():
                     "train_loss": sum(train_avg_loss)/len(train_avg_loss),
                     "train_accuracy": sum(train_avg_acc)/len(train_avg_acc),
                     "val_loss": sum(val_avg_loss)/len(val_avg_loss),
-                    "val_accuracy": sum(train_avg_acc)/len(train_avg_acc)
+                    "val_accuracy": sum(val_avg_acc)/len(val_avg_acc)
         })
 
 

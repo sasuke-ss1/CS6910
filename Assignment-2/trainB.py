@@ -15,7 +15,7 @@ parser = ArgumentParser()
 
 parser.add_argument("--wandb_project", "-wp", default="Asng-2", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
 parser.add_argument("--wandb_entity", "-we", default="sasuke", type=str, help="Wandb Entity used to track experiments in the Weights & Biases dashboard.")
-parser.add_argument("--batch_size", "-b", default=128, type=int, help="Batch size used to train neural network.")
+parser.add_argument("--batch_size", "-b", default=64, type=int, help="Batch size used to train neural network.")
 parser.add_argument("--question", "-q", type=bool, default=False, help="Set True to run wandb experiments")
 parser.add_argument("--lr", "-lr", type=float, default=1e-5, help="Learning rate used to optimize model parameters")
 parser.add_argument("--epochs", "-e", default=6, type=int, help="Number of epochs to train neural network.")
@@ -159,7 +159,7 @@ def train_wb():
                     "train_loss": sum(train_avg_loss)/len(train_avg_loss),
                     "train_accuracy": sum(train_avg_acc)/len(train_avg_acc),
                     "test_loss": sum(val_avg_loss)/len(val_avg_loss),
-                    "test_accuracy": sum(train_avg_acc)/len(train_avg_acc)
+                    "test_accuracy": sum(val_avg_acc)/len(val_avg_acc)
         })
 
 
