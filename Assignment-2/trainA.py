@@ -18,17 +18,17 @@ from torch.nn.functional import softmax
 
 parser = ArgumentParser()
 
-parser.add_argument("--wandb_project", "-wp", default="test-1", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
+parser.add_argument("--wandb_project", "-wp", default="test-2", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
 parser.add_argument("--wandb_entity", "-we", default="sasuke", type=str, help="Wandb Entity used to track experiments in the Weights & Biases dashboard.")
 parser.add_argument("--batch_size", "-b", default=32, type=int, help="Batch size used to train neural network.")
 parser.add_argument("--question", "-q", type=int, default=None, help="Set True to run wandb experiments")
 parser.add_argument("--lr", "-lr", type=float, default=1e-3, help="Learning rate used to optimize model parameters")
-parser.add_argument("--epochs", "-e", default=10, type=int, help="Number of epochs to train neural network.")
+parser.add_argument("--epochs", "-e", default=35, type=int, help="Number of epochs to train neural network.")
 parser.add_argument("--num_filters", "-nf", default = 32, type=int, help="Base number of filters")
 parser.add_argument("--filter_org", "-fo", type=str, default="const", help="Stratergy for depth of each layer's activation")
-parser.add_argument("--activation", "-a", type=str, default="ReLU", help="Activation function after each layer")
-parser.add_argument("--dropout", "-d", type=float, default=0.3, help="Dropout probability value for each layer")
-parser.add_argument("--batch_norm", "-bn", type=bool, default=False, help="Set true to apply batch normalization to every layer.")
+parser.add_argument("--activation", "-a", type=str, default="GELU", help="Activation function after each layer")
+parser.add_argument("--dropout", "-d", type=float, default=0.5, help="Dropout probability value for each layer")
+parser.add_argument("--batch_norm", "-bn", type=lambda x: (str(x).lower() == 'true'), default=False, help="Set true to apply batch normalization to every layer.")
 parser.add_argument("--parent_dir", "-p", type=str, default="./nature_12K", help="Path to the parent directory of the dataset.")
 parser.add_argument("--filter_size", "-fs", type=str, default="3", help="Filter size of each layer seperated by comma")
 args = parser.parse_args()
@@ -207,18 +207,18 @@ if __name__ == "__main__":
         wandb.run.name = "question-4"
 
         model = torch.load("./best_model.pth").to(device)
-        #val_avg_acc = []
+        val_avg_acc = []
         with torch.no_grad():
-        #    model.eval()
-        #    for img, label in tqdm(test_loader):
-        #        img, label = img.to(device), label.to(device)
-        #        pred = model(img)
-        #        pred = torch.argmax(pred, dim=1)
-        #        accuracy = (pred == label).float().mean()
-#
-        #        val_avg_acc.append(accuracy.item())
-#
-        #    print(sum(val_avg_acc)/len(val_avg_acc))
+            model.eval()
+            for img, label in tqdm(test_loader):
+                img, label = img.to(device), label.to(device)
+                pred = model(img)
+                pred = torch.argmax(pred, dim=1)
+                accuracy = (pred == label).float().mean()
+
+                val_avg_acc.append(accuracy.item())
+
+            print("The accuracy on the test set is:", sum(val_avg_acc)/len(val_avg_acc))
 
             test_dir = os.path.join(args.parent_dir, "val")
             idx2cl = dict(zip(test_data.cltoidx.values(), test_data.cltoidx.keys()))
