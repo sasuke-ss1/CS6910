@@ -157,10 +157,10 @@ Below is a table that has the number of parameters and the number of operations 
 - The input is assumed to be of the size (H, W, 3) i.e. a general image, we used H = W = 224.
 - As mentioned above the output for this input is given by:
 $$
-H_{out} = \lfloor \frac{H_{in} + 2*padding - dilation*(kernel\_size -1) -1}{stride} + 1 \rfloor
+H_{out} = \lfloor \frac{H_{in} + 2∗padding - dilation∗(kernel\_size -1) -1}{stride} + 1 \rfloor
 $$
 $$
-W_{out} = \lfloor \frac{W_{in} + 2*padding - dilation*(kernel\_size -1) -1}{stride} + 1 \rfloor
+W_{out} = \lfloor \frac{W_{in} + 2∗padding - dilation∗(kernel\_size -1) -1}{stride} + 1 \rfloor
 $$
 
 - The filter sizes of the convolution layer is assumed to be kxk and there are m filters in each layer.
@@ -168,15 +168,15 @@ $$
 
 | layers                 | No. of parameters                | No. of operations                                      | 
 | :--------------------: | :------------------------------: | ------------------------------------------------------ |
-| Conv1                  | $k*k*m*3$                        | $(H−(k−1))∗(W−(k−1))∗m*3*k^2+(H−(k−1))∗(W−(k−1))∗m$     
+| Conv1                  | $k∗k∗m∗3$                        | $(H−(k−1))∗(W−(k−1))∗m∗3∗k^2+(H−(k−1))∗(W−(k−1))∗m$     
 | MaxPool1               | $0$                              | $(H−(k−1))∗(W−(k−1))∗m$                                
-| Conv2                  | $k*k*m*m$                        | $(H−3(k−1))∗(W−3(k−1))∗m*m*k^2+(H−3(k−1))∗(W−3(k−1))∗m$ 
+| Conv2                  | $k∗k∗m∗m$                        | $(H−3(k−1))∗(W−3(k−1))∗m∗m∗k^2+(H−3(k−1))∗(W−3(k−1))∗m$ 
 | MaxPool2               | $0$                              | $(H−3(k−1))∗(W−3(k−1))∗m$                              
-| Conv3                  | $k*k*m*m$                        | $(H−5(k−1))∗(W−5(k−1))∗m*m*k^2+(H−5(k−1))∗(W−5(k−1))∗m$
+| Conv3                  | $k∗k∗m∗m$                        | $(H−5(k−1))∗(W−5(k−1))∗m∗m∗k^2+(H−5(k−1))∗(W−5(k−1))∗m$
 | MaxPool3               | $0$                              | $(H−5(k−1))∗(W−5(k−1))∗m$                              
-| Conv4                  | $k*k*m*m$                        | $(H−7(k−1))∗(W−7(k−1))∗m*m*k^2+(H−7(k−1))∗(W−7(k−1))∗m$
+| Conv4                  | $k∗k∗m∗m$                        | $(H−7(k−1))∗(W−7(k−1))∗m∗m∗k^2+(H−7(k−1))∗(W−7(k−1))∗m$
 | MaxPool4               | $0$                              | $(H−7(k−1))∗(W−7(k−1))∗m$                              
-| Conv5                  | $k*k*m*m$                        | $(H−9(k−1))∗(W−9(k−1))∗m*m*k^2+(H−9(k−1))∗(W−9(k−1))∗m$
+| Conv5                  | $k∗k∗m∗m$                        | $(H−9(k−1))∗(W−9(k−1))∗m∗m∗k^2+(H−9(k−1))∗(W−9(k−1))∗m$
 | MaxPool5               | $0$                              | $(H−9(k−1))∗(W−9(k−1))∗m$    
                     
 
