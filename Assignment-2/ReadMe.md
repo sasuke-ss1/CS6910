@@ -458,7 +458,7 @@ In general, the models used for finetuning/transfer learning are very big and ta
 - If we have a bigger dataset we can unfreeze a few more last layers and train the model, one more thing that intuitively makes sense is that we should keep the learning rate for this smaller and smaller as we unfreeze more layers for training, as the model has converged for IMAGENET and our dataset which has classes similar to that of IMAGENET needs to only slightly adjust the weights to get the best results. This argument relies on the fact that the model was trained using a large number of data points and hence is already in a good local minimum.
 - General heuristic is that model learns more general features that are useful for a wide range of tasks, while higher layers learn more task-specific features so one can do selective finetuning. By selectively fine-tuning specific layers of the pre-trained model, we can quickly adapt the model to the new task, while minimizing the risk of overfitting or forgetting the knowledge learned during pre-training
 
-## Question 3 
+## Question 3&4
 
 We are using the first of the aforementioned strategy of only training the final Linear layer and using the ResNet backbone as a feature extractor:
 
