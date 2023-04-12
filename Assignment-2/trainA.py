@@ -249,12 +249,11 @@ if __name__ == "__main__":
 
             fig.supylabel("True Labels")
             fig.supxlabel("Predicted Labels")
-            #plt.savefig("./1.png")
+            plt.savefig("./1.png")
             wandb.log({f"Question-4": wandb.Image(Image.open("./1.png").convert("RGB"))})
             plt.show()  
                     
-                    
-                
+
 
     else:
         train(True)

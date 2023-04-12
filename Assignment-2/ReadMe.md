@@ -160,22 +160,22 @@ Below is a table that has the number of parameters and the number of operations 
 $$ H_{out} = \lfloor \frac{H_{in} + 2∗padding - dilation∗(kernel\_size -1) -1}{stride} + 1 \rfloor $$
 
 $$ W_{out} = \lfloor \frac{W_{in} + 2∗padding - dilation∗(kernel\_size -1) -1}{stride} + 1 \rfloor $$
-- The filter sizes of the convolution layer is assumed to be kxk and there are m filters in each layer.
+- The filter sizes of the convolution layer is assumed to be kxk and there are m filters in each layer, we also assume that the padding is set to 0, dilation is set to 1, we are also assuming a stride of one for both convolutional layer and maxpool layer. We further assume that one comparision operation is same as that of one addition or multiplication operation.
 
 
-| layers                 | No. of parameters                | No. of operations                                      | 
-| :--------------------: | :------------------------------: | ------------------------------------------------------ |
-| Conv1                  | $k∗k∗m∗3$                        | $(H−(k−1))∗(W−(k−1))∗m∗3∗k^2+(H−(k−1))∗(W−(k−1))∗m$     
-| MaxPool1               | $0$                              | $(H−(k−1))∗(W−(k−1))∗m$                                
-| Conv2                  | $k∗k∗m∗m$                        | $(H−3(k−1))∗(W−3(k−1))∗m∗m∗k^2+(H−3(k−1))∗(W−3(k−1))∗m$ 
-| MaxPool2               | $0$                              | $(H−3(k−1))∗(W−3(k−1))∗m$                              
-| Conv3                  | $k∗k∗m∗m$                        | $(H−5(k−1))∗(W−5(k−1))∗m∗m∗k^2+(H−5(k−1))∗(W−5(k−1))∗m$
-| MaxPool3               | $0$                              | $(H−5(k−1))∗(W−5(k−1))∗m$                              
-| Conv4                  | $k∗k∗m∗m$                        | $(H−7(k−1))∗(W−7(k−1))∗m∗m∗k^2+(H−7(k−1))∗(W−7(k−1))∗m$
-| MaxPool4               | $0$                              | $(H−7(k−1))∗(W−7(k−1))∗m$                              
-| Conv5                  | $k∗k∗m∗m$                        | $(H−9(k−1))∗(W−9(k−1))∗m∗m∗k^2+(H−9(k−1))∗(W−9(k−1))∗m$
-| MaxPool5               | $0$                              | $(H−9(k−1))∗(W−9(k−1))∗m$    
-                    
+| layers                 | No. of parameters                 | No. of operations                                      | 
+| :--------------------: | :-------------------------------: | ------------------------------------------------------ |
+| Conv1                  | $k∗k∗m∗3$                         | $(H−(k−1))∗(W−(k−1))∗m∗3∗k^2+(H−(k−1))∗(W−(k−1))∗m∗(3k^2−1)$     
+| MaxPool1               | $0$                               | $(H−2(k−1))∗(W−2(k−1))∗m∗k^2$                                
+| Conv2                  | $k∗k∗m∗m$                         | $(H−3(k−1))∗(W−3(k−1))∗m∗m∗k^2+(H−3(k−1))∗(W−3(k−1))∗m∗(mk^2−1)$ 
+| MaxPool2               | $0$                               | $(H−4(k−1))∗(W−4(k−1))∗m∗k^2$                              
+| Conv3                  | $k∗k∗m∗m$                         | $(H−5(k−1))∗(W−5(k−1))∗m∗m∗k^2+(H−5(k−1))∗(W−5(k−1))∗m∗(mk^2−1)$
+| MaxPool3               | $0$                               | $(H−6(k−1))∗(W−6(k−1))∗m∗k^2$                              
+| Conv4                  | $k∗k∗m∗m$                         | $(H−7(k−1))∗(W−7(k−1))∗m∗m∗k^2+(H−7(k−1))∗(W−7(k−1))∗m∗(mk^2−1)$
+| MaxPool4               | $0$                               | $(H−8(k−1))∗(W−8(k−1))∗m∗k^2$                              
+| Conv5                  | $k∗k∗m∗m$                         | $(H−9(k−1))∗(W−9(k−1))∗m∗m∗k^2+(H−9(k−1))∗(W−9(k−1))∗m∗(mk^2−1)$
+| MaxPool5               | $0$                               | $(H−10(k−1))∗(W−10(k−1))∗m∗k^2$    
+| Dense                  | $(H−10(k−1))∗(W−10(k−1))∗m∗10+10$ | $10∗(2∗(H−10(k−1))∗(W−10(k−1)))$
 
 The total number of parameters and the total number of operations is the column-wise sum of __No. of parameters__ and __No. of operations__ respectively.  
 
