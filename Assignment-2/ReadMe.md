@@ -55,7 +55,7 @@ Every convolutional layer can have variable filter size and num of filters, we d
 The last layers contain 10 output neurons for the 10 classes, and the input to the last layer is calculated by using the below formula and assuming the feature maps to be square all the time.
 
 $$
-H_{out} = \lfloor \frac{H_{in} + 2*padding - dilation*(kernel\_size -1) -1}{stride} + 1 \rfloor
+H_{out} = \lfloor \frac{H_{in} + 2∗padding - dilation∗(kernel\_size -1) -1}{stride} + 1 \rfloor
 $$
 
 This is the output dimension of a convolutional layer as well as the max pool layer,  just that in the case of the max pool layer stride is 2 and in the convolutional layer the stride is 1.
@@ -156,13 +156,10 @@ Below is a table that has the number of parameters and the number of operations 
 
 - The input is assumed to be of the size (H, W, 3) i.e. a general image, we used H = W = 224.
 - As mentioned above the output for this input is given by:
-$$
-H_{out} = \lfloor \frac{H_{in} + 2∗padding - dilation∗(kernel\_size -1) -1}{stride} + 1 \rfloor
-$$
-$$
-W_{out} = \lfloor \frac{W_{in} + 2∗padding - dilation∗(kernel\_size -1) -1}{stride} + 1 \rfloor
-$$
+  
+$$ H_{out} = \lfloor \frac{H_{in} + 2∗padding - dilation∗(kernel\_size -1) -1}{stride} + 1 \rfloor $$
 
+$$ W_{out} = \lfloor \frac{W_{in} + 2∗padding - dilation∗(kernel\_size -1) -1}{stride} + 1 \rfloor $$
 - The filter sizes of the convolution layer is assumed to be kxk and there are m filters in each layer.
 
 
