@@ -243,65 +243,6 @@ parameters:
 
 ```
 
-To split the training data into 80-20% train-val split we use the inbuilt pytorch function ``` random_split() ``` this as the name suggests splits the data randomly into two, with the specified configuration.
-
-We also apply the various inbuilt "transforms" to augment our data as already our data is quite less when compared to the conventional datasets like CIFAR10 which have 60,000 instances.
-
-We don't apply augmentation to the test data.
-
-Below is the code for all the transformations applied:
-
-``` python 
-
-train_transform = transforms.Compose([
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomVerticalFlip(p=0.5),
-            transforms.RandomRotation((180)),
-            transforms.RandomApply(torch.nn.ModuleList([transforms.ColorJitter()]), p=0.5),
-            transforms.Resize(256),
-            transforms.RandomCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-            transforms.RandomErasing(p=0.4, value='random')
-
-])
-
-val_transform = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-])
-
-```
-
-We then write a train loop for the wandb sweep function as initializing the sweep values to the values given below.
-
-```
-program: train.py
-method: bayes
-name: "complete-sweep"
-metric:
-  name: val_accuracy
-  goal: maximize
-parameters:
-    lr:
-      values: [0.001, 0.0001]
-    activation:
-      values: ["SiLU", "LeakyReLU", "ReLU", "GELU"]
-    batch_norm:
-      values: [True, False]
-    dropout:
-      values: [0.3, 0.5]
-    filter_org: 
-      values: ["half", "double", "const"]
-    filter_size:
-      values: ["3", "5,5,3,3,3", "5"]
-    num_filters:
-      values: [16, 32, 64]
-
-```
-
 Like the last assignment, we use bayesian search over the hyperparameters because it actually considers the past history of hyperparameters(prior) selected before selecting the new set of hyperparameters.
 
 So at every run, it does the following:
