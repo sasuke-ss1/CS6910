@@ -1,75 +1,101 @@
 import numpy as np
 import pandas as pd
 import os
+import sys
+import torch
+from torch.utils.data import Dataset
 
-END_CHAR = "\n"
-SEP = ","
+np.random.seed(42)
+
+class Dataset(Dataset):
+    def __init__(self, path, batchSize=1,lang = "hin", sow="\t", eow="\n"):
+        self.path = os.path.join(path, lang)
+        self.path = list(map(lambda x: os.path.join(self.path, x), sorted(os.listdir(self.path))))
+        self.sow = sow;self.eow=eow
+        self.batchSize = batchSize
+
+        self.data = self.readData()
+        self.tokenize()
 
 
-def read_data(path: str):
-    with open(path, "r") as f:
-        lines = [line.split(",") for line in f.read().split("\n") if line != '']
-        
-    return lines
-
-def encode(lines: list, train=False, x2enc=None, y2enc=None):
-    if train:
-        xChar, yChar = set(), set()
-        maxXLen, maxYLen = -1, -1
-        for x, y in lines:
-            maxXLen = max(maxXLen, len(x))
-            for char in x:
-                xChar.add(char)
+    @staticmethod
+    def _readData(path: str, sow, eow):
+        with open(path, "r") as f:
+            lines = [line.split(",") for line in f.read().split("\n") if line != '']
             
-            maxYLen = max(maxYLen, len(y))
-            
-            for char in y:
-                yChar.add(char)    
+        lines = [[sow + s + eow for s in line] for line in lines]
+        return lines
 
+    def readData(self):
+        self.test, self.train, self.val = [self._readData(i, self.sow, self.eow) for i in self.path]
+
+    def tokenize(self):
+        xTok, yTok = set(), set()
+        self.maxXlen, self.maxYlen = -1, -1
+
+        for x, y in self.train:
+            self.maxXlen = max(self.maxXlen, len(x))
+            for ch in x:
+                xTok.add(ch)
+
+            self.maxYlen = max(self.maxYlen, len(y))            
+            for ch in y:
+                yTok.add(ch)
+
+        self.xTok, self.yTok = sorted(list(xTok)), sorted(list(yTok))
+
+        self.xLen, self.yLen = len(self.xTok)+1, len(self.yTok)+1
+
+        self.x2TDict = {ch:i+1 for i, ch in enumerate(self.xTok)}
+        self.y2TDict = {ch:i+1 for i, ch in enumerate(self.yTok)}
         
-        x2enc = {char: i for i, char in enumerate(xChar)}
-        y2enc = {char: i for i, char in enumerate(yChar)}
-        x2enc["maxXlen"] = maxXLen
-        y2enc["maxYlen"] = maxYLen
+        self.x2TDict[" "] = 0
+        self.y2TDict[" "] = 0
 
-    xEnc = np.zeros((len(lines), x2enc["maxXlen"], len(x2enc.items())), np.float32)    
-    yEnc = np.zeros((len(lines), y2enc["maxYlen"], len(y2enc.items())), np.float32)
+        self.x2TDictR = {i: char for i, char in self.x2TDict.items()}
+        self.y2TDictR = {i: char for i, char in self.y2TDict.items()}
 
-    for i, [x, y] in enumerate(lines):
-        for idx, char in enumerate(x):
-            xEnc[i, idx, x2enc[char]] = 1
+    def _process(self, data: list):
+        a = torch.zeros((len(data), self.maxXlen), dtype=torch.long)
+        b = torch.zeros((len(data), self.maxYlen), dtype=torch.long)
+        c = torch.zeros((len(data), self.maxYlen, len(self.yTok)+1), dtype=torch.long)
 
-        for idx, char in enumerate(y):
-            yEnc[i, idx, y2enc[char]] = 1
+        for i, [x, y] in enumerate(data):
+            for j, ch in enumerate(x):
+                a[i, j] = self.x2TDict[ch]
+            a[i,j+1:] = self.x2TDict[" "]
+            
+            for j, ch in enumerate(y):
+                b[i, j] = self.y2TDict[ch]
 
-    if train:
-        return [xEnc, yEnc], [x2enc, y2enc] 
+                if j>0:
+                    c[i, j-1, self.y2TDict[ch]]=1
+        
+            b[i, j+1:] = self.y2TDict[" "]
+            c[i, j:, self.y2TDict[" "]] = 1
+            
+    
+        return a, b, c
 
-    return [xEnc, yEnc]
-
-
-
-
-
-def load_data(path: str):
-    files = list(map(lambda x: os.path.join(path, x), sorted(os.listdir(path))))
-    test, train, val =list(map(lambda x: read_data(x), files))
-
-    train, [x2enc, y2enc] = encode(train, True)
-    val = encode(val, x2enc=x2enc, y2enc=y2enc)#, encode(test, x2enc=x2enc, y2enc=y2enc)
-
-    #print(test[0].shape, test[1].shape)
-
-    return train, val, test
-
-
+    def get_data(self, name: str):
+        if name.lower() == "train":
+            return self._process(self.train)
+        
+        elif name.lower() == "test":
+            return self._process(self.test)
+        
+        elif name.lower() == "val":
+            return self._process(self.val)
+        
+        raise  NotImplementedError
 
 
 
 
 
 if __name__ == "__main__":
-    path = "aksharantar_sampled/hin"
-    train, val, test = load_data(path)
-    print(train[0].shape)
-    print(val[0].shape)
+    path = "aksharantar_sampled"
+    data= Dataset(path)
+    
+    trainx, trainxx, trainy = data.get_data("train")
+    print(trainx.shape, trainxx.shape, trainy.shape)
