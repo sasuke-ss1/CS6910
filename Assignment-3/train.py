@@ -6,21 +6,32 @@ from torch.optim import Adam
 import random
 from tqdm import tqdm
 import sys
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument("--path", "-p", type=str, default="aksharantar_sampled", help="The path to the root directory of the dataset.")
+parser.add_argument("--learningRate", "-lr", type=float, default=1e-3, help="Learning rate to train the model")
+parser.add_argument("--backbone", "-bb", type=str, default="lstm", help="The reccurent model used for encoder and decoder.")
+parser.add_argument("--hiddenSize", "-hs", type=int, default=256, help="Dimension of the hidden layer of the backbone.")
+parser.add_argument("--nIters", "-nIters", default=7500, type=int, help="Number of iteration to train the model.")
+parser.add_argument("--teacherForcingRatio", "-tf", type=float, default=1.0, help="The probabily of using teach forcing training.")
+parser.add_argument("--attention", "-a", type=lambda x: (str(x).lower() == 'true'), default=False, help="Flag for using attention in the decoder.")
+parser.add_argument("--numHiddenLayers", "-nhl", type=int, default=1, help="Vertical depth of the Encoder")
+parser.add_argument("--bidirectional", "-bi", type=lambda x: (str(x).lower() == 'true'), default=False, help="Flag for training bi-directional.")
+parser.add_argument("--dropout", "-d", type=float, default=0.0, help="Probability of dropout.")
+parser.add_argument("--language", "-l", type=str, default="hin", help="The langugae of the dataset.")
+#parser.add_argument("--beamS")
+
+args = parser.parse_args()
+path = args.path
+teacherForcingRatio = args.teacherForcingRatio
 
 
-
-
-path = "aksharantar_sampled"
-sowToken = 0
-eosToken = 0
-teacherForcingRatio = 0.5
-
-
-data = Dataset(path)
+data = Dataset(path, lang=args.language)
 trainx, trainxx, trainy = data.get_data("train")
 pairs = list(zip(trainx, trainxx))
-sowToken = data.x2TDict["\t"]
-
+sowToken = data.x2TDict["\t"] #hardcoded
+eowToken = data.x2TDict["\n"] #hardcoded
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -44,12 +55,11 @@ def train(inputTensor: torch.Tensor, targetTensor: torch.Tensor,\
     for ei in range(inputLen):
         encOutput, encHidden = encoder(inputTensor[ei], encHidden)
         #encOutputs[ei] = encOutput[0, 0]
-
     decInput = torch.tensor([[sowToken]], device=device)
 
     decHidden = encHidden
 
-    useTeacherForcing = True# if random.random() < teacherForcingRatio else False
+    useTeacherForcing = True if random.random() < teacherForcingRatio else False
 
     if useTeacherForcing:
         # Teacher forcing: Feed the target as the next input
@@ -66,7 +76,7 @@ def train(inputTensor: torch.Tensor, targetTensor: torch.Tensor,\
             topv, topi = decOutput.topk(1)
             decoder_input = topi.squeeze().detach()  # detach from history as input
             loss += criterion(decOutput, targetTensor[di])
-            if decoder_input.item() == eosToken:
+            if decoder_input.item() == eowToken:
                 break
 
     loss.backward()
@@ -101,13 +111,15 @@ def trainIters(encoder: Encoder, decoder: Decoder, nIters: int, maxLen,print_eve
             print(print_loss_avg)
 
 
-hiddenSize = 256
+hiddenSize = args.hiddenSize
+nIters = args.nIters
+backbone = args.backbone
+
 inputSize = data.xLen
 outputSize = data.yLen
-encoder = Encoder(inputSize, hiddenSize, "gru").to(device)
-decoder = Decoder(outputSize, hiddenSize, "gru").to(device)
-nIters = 7500
 
+encoder = Encoder(inputSize, hiddenSize, args.numHiddenLayers, args.dropout, backbone).to(device)
+decoder = Decoder(outputSize, hiddenSize, args.numHiddenLayers, args.dropout, backbone).to(device)
 
 trainIters(encoder, decoder, nIters, inputSize)
 
