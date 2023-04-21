@@ -11,7 +11,7 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("--path", "-p", type=str, default="aksharantar_sampled", help="The path to the root directory of the dataset.")
 parser.add_argument("--learningRate", "-lr", type=float, default=1e-3, help="Learning rate to train the model")
-parser.add_argument("--backbone", "-bb", type=str, default="lstm", help="The reccurent model used for encoder and decoder.")
+parser.add_argument("--backbone", "-bb", type=str, default="gru", help="The reccurent model used for encoder and decoder.")
 parser.add_argument("--hiddenSize", "-hs", type=int, default=256, help="Dimension of the hidden layer of the backbone.")
 parser.add_argument("--nIters", "-nIters", default=7500, type=int, help="Number of iteration to train the model.")
 parser.add_argument("--teacherForcingRatio", "-tf", type=float, default=1.0, help="The probabily of using teach forcing training.")
@@ -34,11 +34,12 @@ sowToken = data.x2TDict["\t"] #hardcoded
 eowToken = data.x2TDict["\n"] #hardcoded
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 
 def train(inputTensor: torch.Tensor, targetTensor: torch.Tensor,\
             encoder: Encoder, decoder: Decoder, \
             encOptim: torch.optim, decOptim: torch.optim, \
-            criterion: nn.Module, maxLen: int):
+            criterion: nn.Module, maxLen: int, useAttn: bool):
 
     encHidden = encoder.initHidden(device)
 
@@ -54,21 +55,30 @@ def train(inputTensor: torch.Tensor, targetTensor: torch.Tensor,\
 
     for ei in range(inputLen):
         encOutput, encHidden = encoder(inputTensor[ei], encHidden)
-        #encOutputs[ei] = encOutput[0, 0]
-    decInput = torch.tensor([[sowToken]], device=device)
+        encOutputs[ei] = encOutput[0, 0]
 
+    decInput = torch.tensor([[sowToken]], device=device)
     decHidden = encHidden
 
     useTeacherForcing = True if random.random() < teacherForcingRatio else False
 
     if useTeacherForcing:
         # Teacher forcing: Feed the target as the next input
-        for di in range(targetLen):
-            decOutput, decHidden = decoder(decInput, decHidden)
 
-            loss += criterion(decOutput, targetTensor[di].unsqueeze(0))
-            decInput = targetTensor[di].unsqueeze(0)  # Teacher forcing
-        
+        # Check for attention:
+        if useAttn:
+            for di in range(targetLen):
+                decOutput, decHidden, decoderAttention = decoder(decInput, decHidden, encOutputs)
+                
+                loss += criterion(decOutput, targetTensor[di].unsqueeze(0))
+                decInput = targetTensor[di].unsqueeze(0)  # Teacher forcing
+        else:   
+            for di in range(targetLen):
+                decOutput, decHidden = decoder(decInput, decHidden)
+
+                loss += criterion(decOutput, targetTensor[di].unsqueeze(0))
+                decInput = targetTensor[di].unsqueeze(0)  # Teacher forcing
+            
     else:
         # Without teacher forcing: use its own predictions as the next input
         for di in range(targetLen):
@@ -87,7 +97,7 @@ def train(inputTensor: torch.Tensor, targetTensor: torch.Tensor,\
     return loss.item() / targetLen
 
 
-def trainIters(encoder: Encoder, decoder: Decoder, nIters: int, maxLen,print_every=100, learning_rate=0.001):
+def trainIters(encoder: Encoder, decoder: Decoder, nIters: int, maxLen: int, useAttn: bool,print_every=100, learning_rate=0.001):
     print_loss_total = 0  # Reset every print_every
     
 
@@ -102,7 +112,7 @@ def trainIters(encoder: Encoder, decoder: Decoder, nIters: int, maxLen,print_eve
         inputTensor = training_pair[0].to(device)
         targetTensor = training_pair[1].to(device)
 
-        loss = train(inputTensor, targetTensor, encoder, decoder, encOptim, decOptim, criterion, maxLen)
+        loss = train(inputTensor, targetTensor, encoder, decoder, encOptim, decOptim, criterion, maxLen, useAttn)
         print_loss_total += loss
 
         if iter % print_every == 0:
@@ -118,10 +128,14 @@ backbone = args.backbone
 inputSize = data.xLen
 outputSize = data.yLen
 
-encoder = Encoder(inputSize, hiddenSize, args.numHiddenLayers, args.dropout, backbone).to(device)
-decoder = Decoder(outputSize, hiddenSize, args.numHiddenLayers, args.dropout, backbone).to(device)
 
-trainIters(encoder, decoder, nIters, inputSize)
+encoder = Encoder(inputSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, backbone).to(device)
+if args.attention:
+    decoder = AttentionDecoder(outputSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, inputSize, backbone).to(device)
+else:   
+    decoder = Decoder(outputSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, backbone).to(device)
+
+trainIters(encoder, decoder, nIters, inputSize, args.attention)
 
 
 
