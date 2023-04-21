@@ -52,13 +52,12 @@ class Dataset(Dataset):
         self.x2TDict[" "] = 0
         self.y2TDict[" "] = 0
 
-        self.x2TDictR = {i: char for i, char in self.x2TDict.items()}
-        self.y2TDictR = {i: char for i, char in self.y2TDict.items()}
+        self.x2TDictR = {i: char for char, i in self.x2TDict.items()}
+        self.y2TDictR = {i: char for char, i in self.y2TDict.items()}
 
     def _process(self, data: list):
         a = torch.zeros((len(data), self.maxXlen), dtype=torch.long)
         b = torch.zeros((len(data), self.maxYlen), dtype=torch.long)
-        c = torch.zeros((len(data), self.maxYlen, len(self.yTok)+1), dtype=torch.long)
 
         for i, [x, y] in enumerate(data):
             for j, ch in enumerate(x):
@@ -67,15 +66,10 @@ class Dataset(Dataset):
             
             for j, ch in enumerate(y):
                 b[i, j] = self.y2TDict[ch]
-
-                if j>0:
-                    c[i, j-1, self.y2TDict[ch]]=1
-        
             b[i, j+1:] = self.y2TDict[" "]
-            c[i, j:, self.y2TDict[" "]] = 1
             
     
-        return a, b, c
+        return a, b
 
     def get_data(self, name: str):
         if name.lower() == "train":

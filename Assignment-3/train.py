@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 
 parser = ArgumentParser()
 parser.add_argument("--path", "-p", type=str, default="aksharantar_sampled", help="The path to the root directory of the dataset.")
-parser.add_argument("--learningRate", "-lr", type=float, default=1e-3, help="Learning rate to train the model")
+parser.add_argument("--learningRate", "-lr", type=float, default=1e-4, help="Learning rate to train the model")
 parser.add_argument("--backbone", "-bb", type=str, default="gru", help="The reccurent model used for encoder and decoder.")
 parser.add_argument("--hiddenSize", "-hs", type=int, default=256, help="Dimension of the hidden layer of the backbone.")
 parser.add_argument("--nIters", "-nIters", default=7500, type=int, help="Number of iteration to train the model.")
@@ -28,14 +28,29 @@ teacherForcingRatio = args.teacherForcingRatio
 
 
 data = Dataset(path, lang=args.language)
-trainx, trainxx, trainy = data.get_data("train")
-pairs = list(zip(trainx, trainxx))
+
+trainx, trainy = data.get_data("train")
+valx, valy = data.get_data("val")
+
+trainPairs = list(zip(trainx, trainy))
+valPairs = list(zip(valx, valy))
+
 sowToken = data.x2TDict["\t"] #hardcoded
 eowToken = data.x2TDict["\n"] #hardcoded
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
 
+print(f"Training is happening on: {device}")
+
+def accuracy(preds: list, true: list):
+    tmp, dev = 0, 0 
+    for i in range(min(len(true), len(preds))):
+        if true[i] != ' ':
+            tmp += (true[i] == preds[i])
+            dev += 1
+
+    return tmp/dev       
+    
 def train(inputTensor: torch.Tensor, targetTensor: torch.Tensor,\
             encoder: Encoder, decoder: Decoder, \
             encOptim: torch.optim, decOptim: torch.optim, \
@@ -69,7 +84,7 @@ def train(inputTensor: torch.Tensor, targetTensor: torch.Tensor,\
         if useAttn:
             for di in range(targetLen):
                 decOutput, decHidden, decoderAttention = decoder(decInput, decHidden, encOutputs)
-                
+
                 loss += criterion(decOutput, targetTensor[di].unsqueeze(0))
                 decInput = targetTensor[di].unsqueeze(0)  # Teacher forcing
         else:   
@@ -97,14 +112,48 @@ def train(inputTensor: torch.Tensor, targetTensor: torch.Tensor,\
     return loss.item() / targetLen
 
 
-def trainIters(encoder: Encoder, decoder: Decoder, nIters: int, maxLen: int, useAttn: bool,print_every=100, learning_rate=0.001):
+def evaluate(enc: Encoder, dec: Decoder, pair: list, maxLen: int):
+    with torch.no_grad():
+        input_tensor = pair[0].to(device)
+        input_length = input_tensor.size()[0]
+        encHidden = encoder.initHidden(device)
+        encOutputs = torch.zeros(maxLen, encoder.hiddenSize, device=device)
+
+        for ei in range(input_length):
+            encOutput, encHidden = encoder(input_tensor[ei], encHidden)
+            encOutputs[ei] += encOutput[0, 0]
+
+        decInput = torch.tensor([[sowToken]], device=device)  # SOS
+
+        decHidden = encHidden
+
+        decWords = []
+        decAttentions = torch.zeros(maxLen, maxLen, device=device)
+
+        for di in range(maxLen):
+            decOutput, decHidden, decoder_attention = decoder(decInput, decHidden, encOutputs)
+            decAttentions[di] = decoder_attention.data
+            topv, topi = decOutput.data.topk(1)
+            if topi.item() == eowToken:
+                decWords.append('\n')
+                break
+            else:
+                decWords.append(data.y2TDictR[topi.item()])
+
+            decInput = topi.squeeze().detach()
+
+        return decWords, decAttentions[:di + 1]
+
+
+def trainIters(encoder: Encoder, decoder: Decoder, nIters: int, maxLen: int, useAttn: bool,print_every=200, learning_rate=0.001, visualize=False):
     print_loss_total = 0  # Reset every print_every
     
 
     encOptim = Adam(encoder.parameters(), lr=learning_rate)
     decOptim = Adam(decoder.parameters(), lr=learning_rate) 
 
-    trainPair = [random.choice(pairs) for i in range(nIters)]
+    trainPair = [random.choice(trainPairs) for i in range(nIters)]
+
     criterion = nn.NLLLoss()
 
     for iter in tqdm(range(1, nIters + 1)):
@@ -118,25 +167,53 @@ def trainIters(encoder: Encoder, decoder: Decoder, nIters: int, maxLen: int, use
         if iter % print_every == 0:
             print_loss_avg = print_loss_total / print_every
             print_loss_total = 0
-            print(print_loss_avg)
+            print("The Train loss is:", print_loss_avg)
+            
+            print("Starting Validation")
+            accu  = 0
+            for pair in tqdm(valPairs):
+                inputTensor = pair[0].numpy()
+                targetTensor = pair[1].numpy()
+ 
+                inWords = []; tarWords = []
+                for i in inputTensor:
+                    inWords.append(data.x2TDictR[i])
+                for i in targetTensor:
+                    tarWords.append(data.y2TDictR[i])
+
+                outWords, attentions = evaluate(encoder, decoder, pair, maxLen)
+
+                if visualize:
+                    print(''.join(inWords))
+                    print(''.join(tarWords))
+
+                    outSentence = ''.join(outWords)
+
+                    print('<', outSentence)
+                    print('')
+               
+                accu += accuracy(outWords, tarWords)
+
+                
+            print(f"Validation Accuracy: {accu/len(valPairs)}")
 
 
-hiddenSize = args.hiddenSize
-nIters = args.nIters
-backbone = args.backbone
 
-inputSize = data.xLen
-outputSize = data.yLen
+if __name__ == "__main__":
+    hiddenSize = args.hiddenSize
+    nIters = args.nIters
+    backbone = args.backbone
 
+    inputSize = data.xLen
+    outputSize = data.yLen
 
-encoder = Encoder(inputSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, backbone).to(device)
-if args.attention:
-    decoder = AttentionDecoder(outputSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, inputSize, backbone).to(device)
-else:   
-    decoder = Decoder(outputSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, backbone).to(device)
+    encoder = Encoder(inputSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, backbone).to(device)
+    if args.attention:
+        decoder = AttentionDecoder(outputSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, inputSize, backbone).to(device)
+    else:   
+        decoder = Decoder(outputSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, backbone).to(device)
 
-trainIters(encoder, decoder, nIters, inputSize, args.attention)
-
+    trainIters(encoder, decoder, nIters, inputSize, args.attention)
 
 
 
