@@ -3,20 +3,22 @@ import pandas as pd
 import os
 import sys
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 
-np.random.seed(42)
 
-class Dataset(Dataset):
-    def __init__(self, path, batchSize=1,lang = "hin", sow="\t", eow="\n"):
+class dataset(Dataset):
+    def __init__(self, path, batchSize=1,lang = "hin", typ="train",sow="\t", eow="\n"):
         self.path = os.path.join(path, lang)
         self.path = list(map(lambda x: os.path.join(self.path, x), sorted(os.listdir(self.path))))
         self.sow = sow;self.eow=eow
         self.batchSize = batchSize
+        self.typ = typ.lower()
+
+        self.datx, self.daty = None, None
 
         self.data = self.readData()
         self.tokenize()
-
+        self.get_data()
 
     @staticmethod
     def _readData(path: str, sow, eow):
@@ -68,28 +70,46 @@ class Dataset(Dataset):
                 b[i, j] = self.y2TDict[ch]
             b[i, j+1:] = self.y2TDict[" "]
             
-    
+        
         return a, b
 
-    def get_data(self, name: str):
-        if name.lower() == "train":
-            return self._process(self.train)
+    def get_data(self):
+        if self.typ == "train":
+            self.datx, self.daty = self._process(self.train)
         
-        elif name.lower() == "test":
-            return self._process(self.test)
+        elif self.typ == "test":
+            self.datx, self.daty = self._process(self.test)
         
-        elif name.lower() == "val":
-            return self._process(self.val)
+        elif self.typ == "val":
+            self.datx, self.daty = self._process(self.val)
         
-        raise  NotImplementedError
+        else:
+            raise  NotImplementedError
+    
 
-
+    def __len__(self):
+        if self.typ == "train":
+            return len(self.train)
+        
+        elif self.typ == "val":
+            return len(self.val)
+        
+        elif self.typ == "test":
+            return len(self.test)
+    
+    def __getitem__(self, index) -> torch.Tensor:
+        return self.datx[index], self.daty[index]
 
 
 
 if __name__ == "__main__":
     path = "aksharantar_sampled"
-    data= Dataset(path)
-    
-    trainx, trainxx, trainy = data.get_data("train")
-    print(trainx.shape, trainxx.shape, trainy.shape)
+    data= dataset(path, typ="val")
+    print(data.__len__())
+    dataloader = DataLoader(data, batch_size=32)
+    sys.exit()
+    for trainx, trainy in dataloader:
+        print(trainx.shape)
+        print(trainy.shape)
+
+        sys.exit()    
