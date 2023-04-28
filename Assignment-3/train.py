@@ -36,11 +36,11 @@ teacherForcingRatio = args.teacherForcingRatio
 
 trainData = dataset(path, lang=args.language, typ="train")
 valData = dataset(path, lang=args.language, typ="val")
-#testData = dataset(path, lang=args.language, typ="test")
+testData = dataset(path, lang=args.language, typ="test")
 
 trainLoader = DataLoader(trainData, batch_size=args.batch_size)
 valLoader = DataLoader(valData, batch_size=args.batch_size)
-#testLoader = DataLoader(testData, batch_size=args.batch_size)
+testLoader = DataLoader(testData, batch_size=args.batch_size)
 
 sowToken = trainData.x2TDict["\t"] #hardcoded
 eowToken = trainData.x2TDict["\n"] #hardcoded

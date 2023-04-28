@@ -48,11 +48,14 @@ class dataset(Dataset):
 
         self.xLen, self.yLen = len(self.xTok)+1, len(self.yTok)+1
 
-        self.x2TDict = {ch:i+1 for i, ch in enumerate(self.xTok)}
-        self.y2TDict = {ch:i+1 for i, ch in enumerate(self.yTok)}
+        self.x2TDict = {ch:i+2 for i, ch in enumerate(self.xTok)}
+        self.y2TDict = {ch:i+2 for i, ch in enumerate(self.yTok)}
         
         self.x2TDict[" "] = 0
         self.y2TDict[" "] = 0
+
+        self.x2TDict["unk"] = 1
+        self.y2TDict["unk"] = 1
 
         self.x2TDictR = {i: char for char, i in self.x2TDict.items()}
         self.y2TDictR = {i: char for char, i in self.y2TDict.items()}
@@ -62,12 +65,20 @@ class dataset(Dataset):
         b = torch.zeros((len(data), self.maxYlen), dtype=torch.long)
 
         for i, [x, y] in enumerate(data):
-            for j, ch in enumerate(x):
-                a[i, j] = self.x2TDict[ch]
+            for j, ch in enumerate(x[:self.maxXlen-1] + x[-1]):
+                if ch in self.x2TDict.keys():
+                    a[i, j] = self.x2TDict[ch]
+                else:
+                    a[i, j] = self.x2TDict["unk"]
+
             a[i,j+1:] = self.x2TDict[" "]
             
-            for j, ch in enumerate(y):
-                b[i, j] = self.y2TDict[ch]
+            for j, ch in enumerate(y[:self.maxYlen-1] + x[-1]):
+                if ch in self.y2TDict.keys():
+                    b[i, j] = self.y2TDict[ch]
+                else:
+                    b[i, j] = self.y2TDict["unk"]
+
             b[i, j+1:] = self.y2TDict[" "]
             
         
