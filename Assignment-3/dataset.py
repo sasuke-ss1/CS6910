@@ -36,17 +36,15 @@ class dataset(Dataset):
         self.maxXlen, self.maxYlen = -1, -1
 
         for x, y in self.train:
-            self.maxXlen = max(self.maxXlen, len(x))
             for ch in x:
                 xTok.add(ch)
-
-            self.maxYlen = max(self.maxYlen, len(y))            
+         
             for ch in y:
                 yTok.add(ch)
 
         self.xTok, self.yTok = sorted(list(xTok)), sorted(list(yTok))
 
-        self.xLen, self.yLen = len(self.xTok)+1, len(self.yTok)+1
+        self.xLen, self.yLen = len(self.xTok)+2, len(self.yTok)+2
 
         self.x2TDict = {ch:i+2 for i, ch in enumerate(self.xTok)}
         self.y2TDict = {ch:i+2 for i, ch in enumerate(self.yTok)}
@@ -61,11 +59,15 @@ class dataset(Dataset):
         self.y2TDictR = {i: char for char, i in self.y2TDict.items()}
 
     def _process(self, data: list):
+        for (x, y) in data:
+            self.maxXlen = max(self.maxXlen, len(x))
+            self.maxYlen = max(self.maxYlen, len(y)) 
+
         a = torch.zeros((len(data), self.maxXlen), dtype=torch.long)
         b = torch.zeros((len(data), self.maxYlen), dtype=torch.long)
 
         for i, [x, y] in enumerate(data):
-            for j, ch in enumerate(x[:self.maxXlen-1] + x[-1]):
+            for j, ch in enumerate(x):
                 if ch in self.x2TDict.keys():
                     a[i, j] = self.x2TDict[ch]
                 else:
@@ -73,7 +75,7 @@ class dataset(Dataset):
 
             a[i,j+1:] = self.x2TDict[" "]
             
-            for j, ch in enumerate(y[:self.maxYlen-1] + x[-1]):
+            for j, ch in enumerate(y):
                 if ch in self.y2TDict.keys():
                     b[i, j] = self.y2TDict[ch]
                 else:
@@ -115,12 +117,16 @@ class dataset(Dataset):
 
 if __name__ == "__main__":
     path = "aksharantar_sampled"
-    data= dataset(path, typ="val")
+    data= dataset(path, typ="test")
     print(data.__len__())
     dataloader = DataLoader(data, batch_size=32)
-    sys.exit()
+
+    print(data.xLen, data.yLen)
+
     for trainx, trainy in dataloader:
         print(trainx.shape)
         print(trainy.shape)
-
+    
         sys.exit()    
+
+            

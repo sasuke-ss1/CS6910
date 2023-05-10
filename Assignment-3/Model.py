@@ -4,7 +4,7 @@ import sys
 import torch.nn.functional as F
 
 class Encoder(nn.Module):
-    def __init__(self, inputSize: int, hiddenSize: int, numLayers: int, dropout: float, bidirectional: bool,typ: str):
+    def __init__(self, inputSize: int, embedSize: int, hiddenSize: int, numLayers: int, dropout: float, bidirectional: bool,typ: str):
         super().__init__()
         self.hiddenSize = hiddenSize
         self.inputSize = inputSize
@@ -12,15 +12,14 @@ class Encoder(nn.Module):
         self.typ = typ.upper()
         self.bidirectional = bidirectional
 
-        self.embedding = nn.Embedding(inputSize, hiddenSize)
-        
+        self.embedding = nn.Embedding(inputSize, embedSize)
 
         if typ.upper() == "GRU":
-            self.seq = nn.GRU(hiddenSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)        
+            self.seq = nn.GRU(embedSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)        
         elif typ.upper() == "LSTM":
-            self.seq = nn.LSTM(hiddenSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)
+            self.seq = nn.LSTM(embedSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)
         elif typ.upper() == "RNN":
-            self.seq = nn.RNN(hiddenSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)
+            self.seq = nn.RNN(embedSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)
         else:
             raise NotImplementedError
 
@@ -40,7 +39,7 @@ class Encoder(nn.Module):
         return torch.randn((1+int(self.bidirectional))*self.numLayers, batch_size, self.hiddenSize, device=device)
     
 class Decoder(nn.Module):
-    def __init__(self, outputSize: int, hiddenSize: int, numLayers: int, dropout: float, bidirectional: bool,typ: str):
+    def __init__(self, outputSize: int, embedSize: int,hiddenSize: int, numLayers: int, dropout: float, bidirectional: bool,typ: str):
         super().__init__()
         self.hiddenSize = hiddenSize
         self.outputSize = outputSize
@@ -48,14 +47,14 @@ class Decoder(nn.Module):
         self.typ = typ.upper()
         self.bidirectional = bidirectional
 
-        self.embedding = nn.Embedding(outputSize, hiddenSize)
+        self.embedding = nn.Embedding(outputSize, embedSize)
 
         if typ.upper() == "GRU":
-            self.seq = nn.GRU(hiddenSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)        
+            self.seq = nn.GRU(embedSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)        
         elif typ.upper() == "LSTM":
-            self.seq = nn.LSTM(hiddenSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)
+            self.seq = nn.LSTM(embedSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)
         elif typ.upper() == "RNN":
-            self.seq = nn.RNN(hiddenSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)
+            self.seq = nn.RNN(embedSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)
         else:
             raise NotImplementedError
 
@@ -70,7 +69,7 @@ class Decoder(nn.Module):
         output, hidden = self.seq(output, hidden)
 
         output = self.softmax(self.out(output))
-        
+
         return output, hidden
     
     def initHidden(self, batch_size: int,device: torch.device):
@@ -80,48 +79,78 @@ class Decoder(nn.Module):
         return torch.randn((1+int(self.bidirectional))*self.numLayers, batch_size, self.hiddenSize, device=device)
     
 class AttentionDecoder(nn.Module):
-    def __init__(self, outputSize: int, hiddenSize: int, numLayers: int, dropout: float, bidirectional: bool, maxLen: int,typ:str):
+    def __init__(self, outputSize: int, embedSize: int,hiddenSize: int, numLayers: int, dropout: float, bidirectional: bool, maxLen: int,typ:str):
         super().__init__()
         self.hiddenSize = hiddenSize
         self.outputSize = outputSize
         self.numLayers = numLayers
         self.typ = typ.upper()
         self.maxLen = maxLen
+        self.bidirectional = bidirectional
 
-        self.embedding = nn.Embedding(outputSize, hiddenSize)
-        self.attn = nn.Linear(hiddenSize*2, maxLen)
-        self.attnCombine = nn.Linear(hiddenSize*2, hiddenSize)
+        self.embedding = nn.Embedding(outputSize, embedSize)
+        
+        self.attn = nn.Linear(2*hiddenSize*(1+int(bidirectional)),hiddenSize, bias=False)
+        self.v = nn.Linear(hiddenSize,1, bias=False)
 
         if typ.upper() == "GRU":
-            self.seq = nn.GRU(hiddenSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional)        
+            self.seq = nn.GRU((hiddenSize*(1+int(bidirectional))) + embedSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)        
         elif typ.upper() == "LSTM":
-            self.seq = nn.LSTM(hiddenSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional)
+            self.seq = nn.LSTM((hiddenSize*(1+int(bidirectional))) + embedSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)
         elif typ.upper() == "RNN":
-            self.seq = nn.RNN(hiddenSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional)
+            self.seq = nn.RNN((hiddenSize*(1+int(bidirectional))) + embedSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)
         else:
             raise NotImplementedError
+        
+        self.out = nn.Linear((1+int(self.bidirectional))*self.hiddenSize, self.outputSize)     
+        self.softmax = nn.LogSoftmax(dim=-1)
 
-        self.out = nn.Linear(hiddenSize, outputSize)
-
-    def forward(self, input, hidden, encoderOutputs):
-        embed = self.embedding(input).view(1, 1, -1)
+    def forward(self, input: torch.Tensor, hidden: torch.Tensor, encoderOutputs):
+        inp = input.unsqueeze(1)
+        embed = self.embedding(inp).transpose(1, 0)
+        s = hidden
+        
+        # Reshaping Stuff
         if self.typ == "LSTM":
-            attnWeights = F.softmax(self.attn(torch.cat((embed[0], hidden[0][0]), 1)), dim=1)
+            hidden = hidden[0].view(self.numLayers, 1+int(self.bidirectional), -1, self.hiddenSize)[-1]
+
+            if self.bidirectional:
+                h1, h2 = hidden[0], hidden[1]
+                hidden = torch.cat((h1, h2), dim=1)
+
+            else:
+                hidden = hidden.squeeze(0)
         else:
-            attnWeights = F.softmax(self.attn(torch.cat((embed[0], hidden[0]), 1)), dim=1)
-        attnApplied = torch.bmm(attnWeights.unsqueeze(0), encoderOutputs.unsqueeze(0))
+            hidden = hidden.view(self.numLayers, 1+int(self.bidirectional), -1, self.hiddenSize)[-1]
 
-        output = torch.cat((embed[0], attnApplied[0]), 1)
-        output = self.attnCombine(output).unsqueeze(0)
+            if self.bidirectional:
+                h1, h2 = hidden[0], hidden[1]
+                hidden = torch.cat((h1, h2), dim=1)
 
-        output = F.relu(output)
-        output, hidden = self.seq(output, hidden)
-        output = F.log_softmax(self.out(output[0]), dim=1)
+            else:
+                hidden = hidden.squeeze(0)
+
+        # Attention
+        batchSize, seqLen, _ = encoderOutputs.shape
+        hidden = hidden.unsqueeze(1).repeat(1, seqLen, 1)
+        energy = torch.tanh(self.attn(torch.cat((hidden, encoderOutputs), dim = 2)))    
+        
+        attention = self.v(energy).squeeze(2)
+  
+        attnWeights = F.softmax(attention, dim=1).unsqueeze(1)
+
+        # Apply Attention
+        attnApplied = torch.bmm(attnWeights, encoderOutputs).transpose(0, 1)
+        input = torch.cat((embed, attnApplied), dim = 2).permute(1,0,2)
+
+        output, hidden = self.seq(input, s)
+
+        output = self.softmax(self.out(output))
 
         return output, hidden, attnWeights  
 
-    def initHidden(self, batch_size, device: torch.device):
+    def initHidden(self, batch_size: int,device: torch.device):
         if self.typ == "LSTM":
-            return (torch.rand(self.numLayers, batch_size, self.hiddenSize, device=device), torch.rand(self.numLayers, batch_size, self.hiddenSize, device=device))
+            return (torch.randn((1+int(self.bidirectional))*self.numLayers, batch_size, self.hiddenSize, device=device), torch.randn((1+int(self.bidirectional))*self.numLayers, batch_size, self.hiddenSize, device=device))
         
-        return torch.rand(self.numLayers, batch_size, self.hiddenSize, device=device)
+        return torch.randn((1+int(self.bidirectional))*self.numLayers, batch_size, self.hiddenSize, device=device)
