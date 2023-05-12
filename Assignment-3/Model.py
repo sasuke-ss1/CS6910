@@ -97,6 +97,10 @@ class AttentionDecoder(nn.Module):
         self.attn = nn.Linear(2*hiddenSize*(1+int(bidirectional)),hiddenSize, bias=False)
         self.v = nn.Linear(hiddenSize,1, bias=False)
 
+        self.tmp = nn.Linear(hiddenSize, hiddenSize)
+
+
+
         if typ.upper() == "GRU":
             self.seq = nn.GRU((hiddenSize*(1+int(bidirectional))) + embedSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)        
         elif typ.upper() == "LSTM":
@@ -137,7 +141,7 @@ class AttentionDecoder(nn.Module):
         # Attention
         batchSize, seqLen, _ = encoderOutputs.shape
         hidden = hidden.unsqueeze(1).repeat(1, seqLen, 1)
-        energy = torch.tanh(self.attn(torch.cat((hidden, encoderOutputs), dim = 2)))    
+        energy = torch.tanh(self.tmp(torch.tanh(self.attn(torch.cat((hidden, encoderOutputs), dim = 2)))))    
         
         attention = self.v(energy).squeeze(2)
   

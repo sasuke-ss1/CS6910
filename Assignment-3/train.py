@@ -260,7 +260,7 @@ def train_wb():
     encoder = Encoder(inputSize, config.embedSize, config.hiddenSize, config.numHiddenLayers, config.dropout, config.bidirectional, config.backbone).to(device)
     decoder = Decoder(outputSize, config.embedSize, config.hiddenSize, config.numHiddenLayers, config.dropout, config.bidirectional, config.backbone).to(device)
 
-    trainIters(encoder, decoder, epochs, inputSize, False, config.teacherForcingRatio)
+    trainIters(encoder, decoder, epochs, inputSize, False, config.teacherForcingRatio, wan=True)
 
 
 
