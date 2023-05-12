@@ -11,11 +11,14 @@ from argparse import ArgumentParser
 from utils import *
 import numpy as np
 import wandb
+import yaml
 
 torch.manual_seed(10)
 np.random.seed(10)
 
 parser = ArgumentParser()
+parser.add_argument("--wandb_project", "-wp", default="test-2", type=str, help="Project name used to track experiments in Weights & Biases dashboard")
+parser.add_argument("--wandb_entity", "-we", default="sasuke", type=str, help="Wandb Entity used to track experiments in the Weights & Biases dashboard.")
 parser.add_argument("--path", "-p", type=str, default="aksharantar_sampled", help="The path to the root directory of the dataset.")
 parser.add_argument("--learningRate", "-lr", type=float, default=1e-3, help="Learning rate to train the model")
 parser.add_argument("--backbone", "-bb", type=str, default="gru", help="The reccurent model used for encoder and decoder.")
@@ -28,7 +31,7 @@ parser.add_argument("--attention", "-a", type=lambda x: (str(x).lower() == 'true
 parser.add_argument("--numHiddenLayers", "-nhl", type=int, default=2, help="Vertical depth of the Encoder")
 parser.add_argument("--bidirectional", "-bi", type=lambda x: (str(x).lower() == 'true'), default=False, help="Flag for training bi-directional.")
 parser.add_argument("--dropout", "-d", type=float, default=0.25, help="Probability of dropout.")
-parser.add_argument("--language", "-l", type=str, default="hin", help="The langugae of the dataset.")
+parser.add_argument("--language", "-l", type=str, default="tam", help="The langugae of the dataset.")
 parser.add_argument("--question", "-q", required=False, type=int,help="The wandb question number to run.")
 #parser.add_argument("--beamS")
 
@@ -53,12 +56,15 @@ eowToken = trainData.x2TDict["\n"] #hardcoded
 device = torch.device("cuda" if torch.cuda.is_available() and not debug else "cpu")
 
 print(f"Training is happening on: {device}")
- 
+
+
+inputSize = trainData.xLen
+outputSize = trainData.yLen
 
 def train(inputTensor: torch.Tensor, targetTensor: torch.Tensor,\
             encoder: Encoder, decoder: Decoder, \
             encOptim: torch.optim, decOptim: torch.optim, \
-            criterion: nn.Module, maxLen: int, useAttn: bool):
+            criterion: nn.Module, maxLen: int, useAttn: bool, teacherForcingRatio=teacherForcingRatio):
 
     encHidden = encoder.initHidden(args.batch_size, device)
 
@@ -126,6 +132,9 @@ def train(inputTensor: torch.Tensor, targetTensor: torch.Tensor,\
     loss += criterion(outputs, targetTensor) 
 
     loss.backward()
+    
+    torch.nn.utils.clip_grad_norm_(decoder.parameters(), 1)
+    torch.nn.utils.clip_grad_norm_(encoder.parameters(), 1)
 
     encOptim.step()
     decOptim.step()
@@ -184,23 +193,24 @@ def evaluate(enc: Encoder, dec: Decoder, pair: list, criterion: nn.Module, useAt
     
         return loss.item(), AccW, AccC
 
-def trainIters(encoder: Encoder, decoder: Decoder, epochs: int, maxLen: int, useAttn: bool,print_every=1, learning_rate=0.001, visualize=False):
-    print_loss_total = 0  # Reset every print_every
+def trainIters(encoder: Encoder, decoder: Decoder, epochs: int, maxLen: int, useAttn: bool,print_every=1, learning_rate=0.001, teacherForcingRatio=teacherForcingRatio,wan=False):
     
-
     encOptim = Adam(encoder.parameters(), lr=learning_rate)
     decOptim = Adam(decoder.parameters(), lr=learning_rate) 
 
     criterion = nn.NLLLoss()
 
     for epoch in range(1, epochs + 1):
+        if epoch>2:
+            teacherForcingRatio = 0
+
         loop_obj = tqdm(trainLoader)
         epochTrainAccW, epochTrainAccC,epochTrainLoss = [], [], []
         for training_pair in loop_obj:
             inputTensor = training_pair[0].to(device)
             targetTensor = training_pair[1].to(device)
 
-            loss, accW, accC = train(inputTensor, targetTensor, encoder, decoder, encOptim, decOptim, criterion, maxLen, useAttn)
+            loss, accW, accC = train(inputTensor, targetTensor, encoder, decoder, encOptim, decOptim, criterion, maxLen, useAttn, teacherForcingRatio)
             
 
             loop_obj.set_postfix({f"Loss": f"{loss:0.3f}"})
@@ -231,7 +241,26 @@ def trainIters(encoder: Encoder, decoder: Decoder, epochs: int, maxLen: int, use
                 print(f"Validation Word Accuracy is {sum(epochValAccW)/len(epochValAccW)}")
                 print(f"Validation Character Accuracy is {sum(epochValAccC)/len(epochValAccC)}")
 
+        if wan:
+            wandb.log(
+                {
+                    "train_loss": sum(epochTrainLoss)/len(epochTrainLoss),
+                    "train_accuracy": sum(epochTrainAccW)/len(epochTrainAccW),
+                    "val_loss": sum(epochValLoss)/len(epochValLoss),
+                    "val_accuracy": sum(epochTrainAccW)/len(epochTrainAccW)
+                }
+            ) 
 
+def train_wb():
+    run = wandb.init()
+    config = wandb.config
+    wandb.run.name = "bb_{}_nl_{}_dr_{}_hz_{}_tfr_{}".format(config.backbone, config.numHiddenLayers,\
+                            config.dropout, config.hiddenSize, config.teacherForcingRatio)
+      
+    encoder = Encoder(inputSize, config.embedSize, config.hiddenSize, config.numHiddenLayers, config.dropout, config.bidirectional, config.backbone).to(device)
+    decoder = Decoder(outputSize, config.embedSize, config.hiddenSize, config.numHiddenLayers, config.dropout, config.bidirectional, config.backbone).to(device)
+
+    trainIters(encoder, decoder, epochs, inputSize, False, config.teacherForcingRatio)
 
 
 
@@ -240,8 +269,14 @@ if __name__ == "__main__":
     epochs = args.epochs
     backbone = args.backbone
 
-    inputSize = trainData.xLen
-    outputSize = trainData.yLen
+    if args.question == 2:
+        wandb.login(key="e99813e81e3838e6607d858a20693d589933495f")
+        with open("./sweep.yml", "r") as f:
+            sweep_config = yaml.safe_load(f)
+
+        sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)
+        wandb.agent(sweep_id, function=train_wb, count=50)
+
 
     encoder = Encoder(inputSize, args.embedSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, backbone).to(device)
     if args.attention:
@@ -250,7 +285,6 @@ if __name__ == "__main__":
         decoder = Decoder(outputSize, args.embedSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, backbone).to(device)
 
     trainIters(encoder, decoder, epochs, inputSize, args.attention)
-
 
 
 

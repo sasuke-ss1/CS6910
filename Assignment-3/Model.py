@@ -11,6 +11,7 @@ class Encoder(nn.Module):
         self.numLayers = numLayers
         self.typ = typ.upper()
         self.bidirectional = bidirectional
+        self.dropout = nn.Dropout(dropout)
 
         self.embedding = nn.Embedding(inputSize, embedSize)
 
@@ -25,7 +26,8 @@ class Encoder(nn.Module):
 
     def forward(self, input, hidden):
         embed = self.embedding(input)
-
+        embed = self.dropout(embed)
+        
         output = embed
 
         output, hidden = self.seq(output, hidden)
@@ -46,6 +48,7 @@ class Decoder(nn.Module):
         self.numLayers= numLayers
         self.typ = typ.upper()
         self.bidirectional = bidirectional
+        self.dropout = nn.Dropout(dropout)
 
         self.embedding = nn.Embedding(outputSize, embedSize)
 
@@ -64,6 +67,7 @@ class Decoder(nn.Module):
     def forward(self, input: torch.Tensor, hidden: torch.Tensor):
         inp = input.unsqueeze(1)
         embed = self.embedding(inp)
+        embed = self.dropout(embed)
         output = embed
 
         output, hidden = self.seq(output, hidden)
