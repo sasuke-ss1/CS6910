@@ -153,12 +153,12 @@ def evaluate(enc: Encoder, dec: Decoder, pair: list, criterion: nn.Module, useAt
         inputLen = inputTensor.size(1)
         targetLen = targetTensor.size(1)
         
-        encHidden = encoder.initHidden(args.batch_size, device)
+        encHidden = enc.initHidden(args.batch_size, device)
 
         outputs = torch.zeros(args.batch_size, targetLen, trainData.yLen).to(device)
 
         loss = 0
-        encOutput, encHidden = encoder(inputTensor, encHidden)
+        encOutput, encHidden = enc(inputTensor, encHidden)
 
 
         decHidden = encHidden
@@ -166,7 +166,7 @@ def evaluate(enc: Encoder, dec: Decoder, pair: list, criterion: nn.Module, useAt
 
         if useAttn:
             for di in range(targetLen):
-                decOutput, decHidden, decAttn = decoder(decInput, decHidden, encOutput)
+                decOutput, decHidden, decAttn = dec(decInput, decHidden, encOutput)
 
                 outputs[:, di] = decOutput.squeeze(1)
 
@@ -175,7 +175,7 @@ def evaluate(enc: Encoder, dec: Decoder, pair: list, criterion: nn.Module, useAt
 
         else:
             for di in range(targetLen):
-                decOutput, decHidden = decoder(decInput, decHidden)
+                decOutput, decHidden = dec(decInput, decHidden)
 
                 outputs[:, di] = decOutput.squeeze(1)
 
@@ -193,7 +193,7 @@ def evaluate(enc: Encoder, dec: Decoder, pair: list, criterion: nn.Module, useAt
     
         return loss.item(), AccW, AccC
 
-def trainIters(encoder: Encoder, decoder: Decoder, epochs: int, maxLen: int, useAttn: bool,print_every=1, learning_rate=0.001, teacherForcingRatio=teacherForcingRatio,wan=False):
+def trainIters(encoder: Encoder, decoder: Decoder, epochs: int, maxLen: int, useAttn: bool, learning_rate=0.001, teacherForcingRatio=teacherForcingRatio,wan=False):
     
     encOptim = Adam(encoder.parameters(), lr=learning_rate)
     decOptim = Adam(decoder.parameters(), lr=learning_rate) 
@@ -226,20 +226,17 @@ def trainIters(encoder: Encoder, decoder: Decoder, epochs: int, maxLen: int, use
 
         epochValLoss, epochValAccW, epochValAccC = [],  [], []
 
-        if epoch % print_every == 0:
-            with torch.no_grad():
-                print("Starting Validation")
+        for pair in tqdm(valLoader):
+            loss, accW, accC = evaluate(encoder, decoder, pair, criterion, useAttn)
 
-                for pair in tqdm(valLoader):
-                    loss, accW, accC = evaluate(encoder, decoder, pair, criterion, args.attention)
+            epochValLoss.append(loss)
+            epochValAccW.append(accW)
+            epochValAccC.append(accC)
 
-                    epochValLoss.append(loss)
-                    epochValAccW.append(accW)
-                    epochValAccC.append(accC)
 
-                print(f"Validation Loss is {sum(epochValLoss)/len(epochValLoss)}")        
-                print(f"Validation Word Accuracy is {sum(epochValAccW)/len(epochValAccW)}")
-                print(f"Validation Character Accuracy is {sum(epochValAccC)/len(epochValAccC)}")
+        print(f"Validation Loss is {sum(epochValLoss)/len(epochValLoss)}")        
+        print(f"Validation Word Accuracy is {sum(epochValAccW)/len(epochValAccW)}")
+        print(f"Validation Character Accuracy is {sum(epochValAccC)/len(epochValAccC)}")
 
         if wan:
             wandb.log(
@@ -247,7 +244,7 @@ def trainIters(encoder: Encoder, decoder: Decoder, epochs: int, maxLen: int, use
                     "train_loss": sum(epochTrainLoss)/len(epochTrainLoss),
                     "train_accuracy": sum(epochTrainAccW)/len(epochTrainAccW),
                     "val_loss": sum(epochValLoss)/len(epochValLoss),
-                    "val_accuracy": sum(epochTrainAccW)/len(epochTrainAccW)
+                    "val_accuracy": sum(epochValAccW)/len(epochValAccW)
                 }
             ) 
 
@@ -257,17 +254,15 @@ def train_wb():
     wandb.run.name = "bb_{}_nl_{}_dr_{}_hz_{}_tfr_{}".format(config.backbone, config.numHiddenLayers,\
                             config.dropout, config.hiddenSize, config.teacherForcingRatio)
       
-    encoder = Encoder(inputSize, config.embedSize, config.hiddenSize, config.numHiddenLayers, config.dropout, config.bidirectional, config.backbone).to(device)
-    decoder = Decoder(outputSize, config.embedSize, config.hiddenSize, config.numHiddenLayers, config.dropout, config.bidirectional, config.backbone).to(device)
+    enc = Encoder(inputSize, config.embedSize, config.hiddenSize, config.numHiddenLayers, config.dropout, config.bidirectional, config.backbone).to(device)
+    dec = Decoder(outputSize, config.embedSize, config.hiddenSize, config.numHiddenLayers, config.dropout, config.bidirectional, config.backbone).to(device)
 
-    trainIters(encoder, decoder, epochs, inputSize, False, config.teacherForcingRatio, wan=True)
+    trainIters(enc, dec, args.epochs, inputSize, False, teacherForcingRatio=config.teacherForcingRatio, wan=True)
 
 
 
 if __name__ == "__main__":
-    hiddenSize = args.hiddenSize
-    epochs = args.epochs
-    backbone = args.backbone
+
 
     if args.question == 2:
         wandb.login(key="e99813e81e3838e6607d858a20693d589933495f")
@@ -276,15 +271,16 @@ if __name__ == "__main__":
 
         sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)
         wandb.agent(sweep_id, function=train_wb, count=50)
+    else:
 
 
-    encoder = Encoder(inputSize, args.embedSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, backbone).to(device)
-    if args.attention:
-        decoder = AttentionDecoder(outputSize, args.embedSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, inputSize, backbone).to(device)
-    else:   
-        decoder = Decoder(outputSize, args.embedSize, hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, backbone).to(device)
+        encoder = Encoder(inputSize, args.embedSize, args.hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, args.backbone).to(device)
+        if args.attention:
+            decoder = AttentionDecoder(outputSize, args.embedSize, args.hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, inputSize, args.backbone).to(device)
+        else:   
+            decoder = Decoder(outputSize, args.embedSize, args.hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, args.backbone).to(device)
 
-    trainIters(encoder, decoder, epochs, inputSize, args.attention)
+        trainIters(encoder, decoder, args.epochs, inputSize, False, teacherForcingRatio=args.teacherForcingRatio, wan=False)
 
 
 

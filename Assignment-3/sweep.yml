@@ -16,6 +16,6 @@ parameters:
     dropout:
       values: [0.2, 0.3]
     hiddenSize:
-      values: [256, 512, 1024]
+      values: [128, 256, 512]
     bidirectional:
       values: [True, False]
