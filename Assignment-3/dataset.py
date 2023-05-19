@@ -4,6 +4,7 @@ import os
 import sys
 import torch
 from torch.utils.data import Dataset, DataLoader
+from utils import word2csv
 
 
 class dataset(Dataset):
@@ -52,8 +53,8 @@ class dataset(Dataset):
         self.x2TDict[" "] = 0
         self.y2TDict[" "] = 0
 
-        self.x2TDict["unk"] = 1
-        self.y2TDict["unk"] = 1
+        self.x2TDict["\r"] = 1
+        self.y2TDict["\r"] = 1
 
         self.x2TDictR = {i: char for char, i in self.x2TDict.items()}
         self.y2TDictR = {i: char for char, i in self.y2TDict.items()}
@@ -71,7 +72,7 @@ class dataset(Dataset):
                 if ch in self.x2TDict.keys():
                     a[i, j] = self.x2TDict[ch]
                 else:
-                    a[i, j] = self.x2TDict["unk"]
+                    a[i, j] = self.x2TDict["\r"]
 
             a[i,j+1:] = self.x2TDict[" "]
             
@@ -79,7 +80,7 @@ class dataset(Dataset):
                 if ch in self.y2TDict.keys():
                     b[i, j] = self.y2TDict[ch]
                 else:
-                    b[i, j] = self.y2TDict["unk"]
+                    b[i, j] = self.y2TDict["\r"]
 
             b[i, j+1:] = self.y2TDict[" "]
             
@@ -118,15 +119,13 @@ class dataset(Dataset):
 if __name__ == "__main__":
     path = "aksharantar_sampled"
     data= dataset(path, typ="test")
-    print(data.__len__())
-    dataloader = DataLoader(data, batch_size=32)
-
-    print(data.xLen, data.yLen)
-
-    for trainx, trainy in dataloader:
-        print(trainx.shape)
-        print(trainy.shape)
     
-        sys.exit()    
+    loader = DataLoader(data, batch_size=32)
+
+    for pair in loader:
+
+        word2csv(pair[1], data.y2TDictR, "./1")
+        break
+
 
             

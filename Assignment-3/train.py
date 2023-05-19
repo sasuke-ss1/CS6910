@@ -145,7 +145,7 @@ def train(inputTensor: torch.Tensor, targetTensor: torch.Tensor,\
     return loss.item(), AccW, AccC
 
 
-def evaluate(enc: Encoder, dec: Decoder, pair: list, criterion: nn.Module, useAttn:bool):
+def evaluate(enc: Encoder, dec: Decoder, pair: list, criterion: nn.Module, useAttn:bool, ret=False):
     with torch.no_grad():
         inputTensor = pair[0].to(device)
         targetTensor = pair[1].to(device)
@@ -154,6 +154,7 @@ def evaluate(enc: Encoder, dec: Decoder, pair: list, criterion: nn.Module, useAt
         targetLen = targetTensor.size(1)
         
         encHidden = enc.initHidden(args.batch_size, device)
+        Attn = torch.zeros((targetLen, args.batch_size, inputTensor.shape[-1]))
 
         outputs = torch.zeros(args.batch_size, targetLen, trainData.yLen).to(device)
 
@@ -172,6 +173,8 @@ def evaluate(enc: Encoder, dec: Decoder, pair: list, criterion: nn.Module, useAt
 
                 top= decOutput.argmax(-1)
                 decInput = top.squeeze(1).detach()
+                
+                Attn[di, ...] = decAttn.squeeze(1)
 
         else:
             for di in range(targetLen):
@@ -184,13 +187,16 @@ def evaluate(enc: Encoder, dec: Decoder, pair: list, criterion: nn.Module, useAt
 
 
         outputs = outputs.permute(0, 2, 1)
-        
+
         loss += criterion(outputs, targetTensor)
         
 
         AccW = wordAccuracy(outputs, targetTensor)
         AccC = charAccuracy(outputs, targetTensor)
-    
+        
+        if ret:
+            return loss.item(), AccW, AccC, outputs.argmax(dim=1), Attn.permute(1, 0, 2)
+
         return loss.item(), AccW, AccC
 
 def trainIters(encoder: Encoder, decoder: Decoder, epochs: int, maxLen: int, useAttn: bool, learning_rate=0.001, teacherForcingRatio=teacherForcingRatio,wan=False):
@@ -255,9 +261,12 @@ def train_wb():
                             config.dropout, config.hiddenSize, config.teacherForcingRatio)
       
     enc = Encoder(inputSize, config.embedSize, config.hiddenSize, config.numHiddenLayers, config.dropout, config.bidirectional, config.backbone).to(device)
-    dec = Decoder(outputSize, config.embedSize, config.hiddenSize, config.numHiddenLayers, config.dropout, config.bidirectional, config.backbone).to(device)
+    if args.attention:
+        dec = AttentionDecoder(outputSize, config.embedSize, config.hiddenSize, config.numHiddenLayers, config.dropout, config.bidirectional, inputSize, config.backbone).to(device)
+    else:
+        dec = Decoder(outputSize, config.embedSize, config.hiddenSize, config.numHiddenLayers, config.dropout, config.bidirectional, config.backbone).to(device)
 
-    trainIters(enc, dec, args.epochs, inputSize, False, teacherForcingRatio=config.teacherForcingRatio, wan=True)
+    trainIters(enc, dec, args.epochs, inputSize, args.attention, teacherForcingRatio=config.teacherForcingRatio, wan=True)
 
 
 
@@ -271,6 +280,49 @@ if __name__ == "__main__":
 
         sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)
         wandb.agent(sweep_id, function=train_wb, count=50)
+
+    elif args.question == 4:
+        enc = Encoder(inputSize, args.embedSize, args.hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, args.backbone).to(device)
+        
+        if not args.attention:
+            dec = Decoder(outputSize, args.embedSize, args.hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, args.backbone).to(device)
+            
+            trainIters(enc, dec, args.epochs, inputSize, args.attention, teacherForcingRatio=args.teacherForcingRatio, wan=False)
+            criterion = nn.NLLLoss()
+            
+            acc = [];outs = []
+            for pair in testLoader:
+                _, accuracy, _, ret, _ = evaluate(enc, dec, pair, criterion, args.attention, True)
+                acc.append(accuracy)
+                outs.append(ret)
+            
+            print(f"\nWe get {sum(acc)/len(acc)*100}%  Test accuracy.")
+            outs = torch.cat(outs, dim=0)
+            
+            word2csv(outs, testData.y2TDictR, "pred", "./aksharantar_sampled/tam/tam_test.csv")
+
+        else:
+            dec = AttentionDecoder(outputSize, args.embedSize, args.hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, inputSize, args.backbone).to(device)
+            
+            trainIters(enc, dec, args.epochs, inputSize, args.attention, teacherForcingRatio=args.teacherForcingRatio, wan=False)
+            criterion = nn.NLLLoss()
+            
+            acc = [];outs = [];attn = []
+            for pair in testLoader:
+                _, accuracy, _, ret, decAttn = evaluate(enc, dec, pair, criterion, args.attention, True)
+                acc.append(accuracy)
+                outs.append(ret)
+
+                attn.append(decAttn)
+            
+            print(f"\nWe get {sum(acc)/len(acc)*100}%  Test accuracy.")
+            
+            outs = torch.cat(outs, dim=0)
+            word2csv(outs, testData.y2TDictR, "predAttn", "./aksharantar_sampled/tam/tam_test.csv")
+
+            attn = torch.cat(attn, dim=0)
+            plot(attn, "attnMap")
+
     else:
 
 
@@ -280,7 +332,7 @@ if __name__ == "__main__":
         else:   
             decoder = Decoder(outputSize, args.embedSize, args.hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, args.backbone).to(device)
 
-        trainIters(encoder, decoder, args.epochs, inputSize, False, teacherForcingRatio=args.teacherForcingRatio, wan=False)
+        trainIters(encoder, decoder, args.epochs, inputSize, args.attention, teacherForcingRatio=args.teacherForcingRatio, wan=False)
 
 
 
