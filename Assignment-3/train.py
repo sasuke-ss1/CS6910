@@ -12,6 +12,7 @@ from utils import *
 import numpy as np
 import wandb
 import yaml
+from PIL import Image
 
 torch.manual_seed(10)
 np.random.seed(10)
@@ -28,7 +29,7 @@ parser.add_argument("--epochs", "-e", default=5, type=int, help="Number of epoch
 parser.add_argument("--batch_size", "-bs", default=32, type=int, help="Batch Size for the data.")
 parser.add_argument("--teacherForcingRatio", "-tf", type=float, default=0.0, help="The probabily of using teach forcing training.")
 parser.add_argument("--attention", "-a", type=lambda x: (str(x).lower() == 'true'), default=False, help="Flag for using attention in the decoder.")
-parser.add_argument("--numHiddenLayers", "-nhl", type=int, default=2, help="Vertical depth of the Encoder")
+parser.add_argument("--numHiddenLayers", "-nhl", type=int, default=1, help="Vertical depth of the Encoder")
 parser.add_argument("--bidirectional", "-bi", type=lambda x: (str(x).lower() == 'true'), default=False, help="Flag for training bi-directional.")
 parser.add_argument("--dropout", "-d", type=float, default=0.25, help="Probability of dropout.")
 parser.add_argument("--language", "-l", type=str, default="tam", help="The langugae of the dataset.")
@@ -275,13 +276,16 @@ if __name__ == "__main__":
 
     if args.question == 2:
         wandb.login(key="e99813e81e3838e6607d858a20693d589933495f")
-        with open("./sweep.yml", "r") as f:
+        with open("./sweep2.yml", "r") as f:
             sweep_config = yaml.safe_load(f)
 
         sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)
-        wandb.agent(sweep_id, function=train_wb, count=50)
+        wandb.agent(sweep_id, function=train_wb, count=20)
 
     elif args.question == 4:
+        wandb.login(key="e99813e81e3838e6607d858a20693d589933495f")
+        wandb.init(project=args.wandb_project)
+        wandb.run.name = "question-4"
         enc = Encoder(inputSize, args.embedSize, args.hiddenSize, args.numHiddenLayers, args.dropout, args.bidirectional, args.backbone).to(device)
         
         if not args.attention:
@@ -307,21 +311,28 @@ if __name__ == "__main__":
             trainIters(enc, dec, args.epochs, inputSize, args.attention, teacherForcingRatio=args.teacherForcingRatio, wan=False)
             criterion = nn.NLLLoss()
             
-            acc = [];outs = [];attn = []
+            acc = [];outs = [];attn = [];Tins, Ttar = [], []
             for pair in testLoader:
                 _, accuracy, _, ret, decAttn = evaluate(enc, dec, pair, criterion, args.attention, True)
+
                 acc.append(accuracy)
                 outs.append(ret)
-
                 attn.append(decAttn)
-            
+                Tins.append(pair[0])
+                Ttar.append(pair[1])
+                
             print(f"\nWe get {sum(acc)/len(acc)*100}%  Test accuracy.")
             
             outs = torch.cat(outs, dim=0)
-            word2csv(outs, testData.y2TDictR, "predAttn", "./aksharantar_sampled/tam/tam_test.csv")
+            #word2csv(outs, testData.y2TDictR, "predAttn", "./aksharantar_sampled/tam/tam_test.csv")
 
             attn = torch.cat(attn, dim=0)
-            plot(attn, "attnMap")
+            Tins = torch.cat(Tins, dim=0)
+            Ttar = torch.cat(Ttar, dim=0)
+            
+            plot(attn, Tins, Ttar, [testData.y2TDictR, testData.x2TDictR], "attnMap")
+
+            wandb.log({f"Question-4": wandb.Image(Image.open("./attnMap.png").convert("RGB"))})
 
     else:
 

@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 class Encoder(nn.Module):
     def __init__(self, inputSize: int, embedSize: int, hiddenSize: int, numLayers: int, dropout: float, bidirectional: bool,typ: str):
+        # Initialization
         super().__init__()
         self.hiddenSize = hiddenSize
         self.inputSize = inputSize
@@ -22,9 +23,10 @@ class Encoder(nn.Module):
         elif typ.upper() == "RNN":
             self.seq = nn.RNN(embedSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)
         else:
-            raise NotImplementedError
+            raise NotImplementedError # Raise Error if not [rnn, lstm, gru]
 
     def forward(self, input, hidden):
+        # Forward Pass
         embed = self.embedding(input)
         embed = self.dropout(embed)
         
@@ -35,6 +37,7 @@ class Encoder(nn.Module):
         return output, hidden
     
     def initHidden(self, batch_size: int, device: torch.device):
+        # Random initialization of the hidden layer
         if self.typ == "LSTM":
             return (torch.randn((1+int(self.bidirectional))*self.numLayers, batch_size, self.hiddenSize, device=device), torch.randn((1+int(self.bidirectional))*self.numLayers, batch_size, self.hiddenSize, device=device))
         
@@ -42,6 +45,7 @@ class Encoder(nn.Module):
     
 class Decoder(nn.Module):
     def __init__(self, outputSize: int, embedSize: int,hiddenSize: int, numLayers: int, dropout: float, bidirectional: bool,typ: str):
+        # Initialization
         super().__init__()
         self.hiddenSize = hiddenSize
         self.outputSize = outputSize
@@ -59,12 +63,13 @@ class Decoder(nn.Module):
         elif typ.upper() == "RNN":
             self.seq = nn.RNN(embedSize, hiddenSize, dropout=dropout, num_layers=numLayers, bidirectional=bidirectional, batch_first=True)
         else:
-            raise NotImplementedError
+            raise NotImplementedError # Raise Error if not [rnn, lstm, gru]
 
         self.out = nn.Linear((1+int(self.bidirectional))*self.hiddenSize, self.outputSize)      
         self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, input: torch.Tensor, hidden: torch.Tensor):
+        # Forward Pass
         inp = input.unsqueeze(1)
         embed = self.embedding(inp)
         embed = self.dropout(embed)
@@ -77,6 +82,7 @@ class Decoder(nn.Module):
         return output, hidden
     
     def initHidden(self, batch_size: int,device: torch.device):
+        # Random initialization of the hidden layer
         if self.typ == "LSTM":
             return (torch.randn((1+int(self.bidirectional))*self.numLayers, batch_size, self.hiddenSize, device=device), torch.randn((1+int(self.bidirectional))*self.numLayers, batch_size, self.hiddenSize, device=device))
         
@@ -84,6 +90,7 @@ class Decoder(nn.Module):
     
 class AttentionDecoder(nn.Module):
     def __init__(self, outputSize: int, embedSize: int,hiddenSize: int, numLayers: int, dropout: float, bidirectional: bool, maxLen: int,typ:str):
+        # Initialization
         super().__init__()
         self.hiddenSize = hiddenSize
         self.outputSize = outputSize
@@ -91,6 +98,7 @@ class AttentionDecoder(nn.Module):
         self.typ = typ.upper()
         self.maxLen = maxLen
         self.bidirectional = bidirectional
+        self.dropout =nn.Dropout(dropout)
 
         self.embedding = nn.Embedding(outputSize, embedSize)
         
@@ -111,31 +119,33 @@ class AttentionDecoder(nn.Module):
         self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, input: torch.Tensor, hidden: torch.Tensor, encoderOutputs):
+        # Forward Pass
         inp = input.unsqueeze(1)
         embed = self.embedding(inp).transpose(1, 0)
+        embed = self.dropout(embed)
         s = hidden
         
         # Reshaping Stuff
         if self.typ == "LSTM":
-            hidden = hidden[0].view(self.numLayers, 1+int(self.bidirectional), -1, self.hiddenSize)[-1]
+            hidden = hidden[0].view(self.numLayers, 1+int(self.bidirectional), -1, self.hiddenSize)[-1] # Take the last hidden layer if multiple hidden layers
 
-            if self.bidirectional:
-                h1, h2 = hidden[0], hidden[1]
+            if self.bidirectional: 
+                h1, h2 = hidden[0], hidden[1] # Concatenate left and right hidden as one
                 hidden = torch.cat((h1, h2), dim=1)
 
             else:
                 hidden = hidden.squeeze(0)
         else:
-            hidden = hidden.view(self.numLayers, 1+int(self.bidirectional), -1, self.hiddenSize)[-1]
+            hidden = hidden.view(self.numLayers, 1+int(self.bidirectional), -1, self.hiddenSize)[-1] # Take the last hidden layer if multiple hidden layers
 
             if self.bidirectional:
-                h1, h2 = hidden[0], hidden[1]
+                h1, h2 = hidden[0], hidden[1] # Concatenate left and right hidden as one
                 hidden = torch.cat((h1, h2), dim=1)
 
             else:
                 hidden = hidden.squeeze(0)
 
-        # Attention
+        # Calculating Attention
         batchSize, seqLen, _ = encoderOutputs.shape
         hidden = hidden.unsqueeze(1).repeat(1, seqLen, 1)
         energy = torch.tanh(self.attn(torch.cat((hidden, encoderOutputs), dim = 2)))
@@ -155,6 +165,7 @@ class AttentionDecoder(nn.Module):
         return output, hidden, attnWeights  
 
     def initHidden(self, batch_size: int,device: torch.device):
+        # Random initialization of the hidden layer
         if self.typ == "LSTM":
             return (torch.randn((1+int(self.bidirectional))*self.numLayers, batch_size, self.hiddenSize, device=device), torch.randn((1+int(self.bidirectional))*self.numLayers, batch_size, self.hiddenSize, device=device))
         

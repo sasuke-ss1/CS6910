@@ -2,7 +2,6 @@ import torch
 import pandas as pd
 import numpy as  np
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 
 def wordAccuracy(pred: torch.Tensor, target: torch.Tensor) -> float:
     pred1 = torch.argmax(pred, dim = 1)
@@ -45,14 +44,18 @@ def word2csv(pred: torch.Tensor, invDict: dict, path: str, testPath: str):
 
     df.to_csv(path + ".csv")
     
-def plot(attn: torch.Tensor, input, target,name: str):
-    fig, axs = plt.subplots(3, 3)
-    for i in range(9):
-        axs[i//3, i%3].matshow(attn[i, :].cpu().numpy().T)
-    
-    plt.savefig(name + ".png")
+def plot(attn: torch.Tensor, ins: torch.Tensor, tars: torch.Tensor, int2char: dict,name: str):
+    fig, axs = plt.subplots(3, 3, figsize=(10, 20))
 
-    plt.show()
+    for i in range(9):
+        axs[i//3, i%3].imshow(attn[i, :].cpu().numpy().T)
+        axs[i//3, i%3].set_yticks([])
+        axs[i//3, i%3].set_xticks([])
+                                  
+        axs[i//3, i%3].set_title("".join([int2char[1][j.item()] for j in ins[i]])[1:])
+        
+
+    plt.savefig(name + ".png")
 
 if __name__ == "__main__":
     df = pd.read_csv("pred.csv", index_col=0)
