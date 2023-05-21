@@ -29,8 +29,6 @@ Note: More information can be accessed by using ``` python train.py --help ```
 
 ## Question 1
 
-# Question 1 (15 Marks)
-
 We build the sequence learning model using ``` pytorch ``` that does transliteration.
 
 A usual Encoder does the following:
@@ -233,6 +231,6 @@ There are a few more examples, the attention model also fixes the charecter leve
 
 Below are the and thea heat maps:
 
-![alt text](https://github.com/sasuke-ss1/CS6910/blob/main/Assignment-1/attnMap.png)
+![alt text](https://github.com/sasuke-ss1/CS6910/blob/main/Assignment-3/attnMap.png)
 
 Since Python lacks built-in support for the Tamil font, we only plot the English names. We see that while printing outputs for the PAD, SOW, and EOW token the attention scores are uniform the model isn't giving any weightage to the actual English word but the model is giving weights to the other pad tokens, we also see that the mapping between them is predominantly diagonal implying that Tamil letters align alternatively with the English letters in a sequential way. We also see that a single Tamil letter gives attention to multiple rows suggesting the presence of syllables in English words. Hence proving that our attention mechanism is working.
