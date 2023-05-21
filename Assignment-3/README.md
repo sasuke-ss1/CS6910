@@ -104,7 +104,7 @@ We choose the following hyperparameters to search on:
 - bidirectional: [True, False]
 
 - We didn't choose many hyperparameters because based on our prior experience we knows what might work the best if tuned properly, we dropped off batch size and epochs from the hyperparameter search as they have no effect on the final best accuracy, batch size only control the number of update per epochs and epochs is just how many sweeps of the data we are completing.
-- We also did; not do a hyperparameter search on the optimizer as Adam is known to work the best with the default learning rate of 0.001 and there are a lot more theoretically significant parameters like embedding size, hidden size, etc. to search upon, so we choose here to ignore optimizer and leaning rate in favor of embedding size, hidden size, etc.
+- We also did; not do a hyperparameter search on the optimizer as Adam is known to work the best with the default learning rate of 0.001 and there are a lot more theoretically significant parameters like embedding size, hidden size, etc. to search upon, so we choose here to ignore ohttps://github.com/sasuke-ss1/CS6910/blob/main/Assignment-3/attnMap.pngptimizer and leaning rate in favor of embedding size, hidden size, etc.
 -We ran wandb sweep with the target of maximizing the validation accuracy. The intuition behind doing this was that we are training our model for only 5 epochs will give us a general estimate of the validation accuracy the model is capable of. This intuition is further justified by seeing the plots that the curve are flattening out towards the end.
 
 - I wanted to check the impact of varying the teacher forcing ratio on accuracy. Hence, I choose three random by vastly separate values: 0.3, 0.5, and 0.7.
@@ -229,7 +229,7 @@ There are a few more examples, the attention model also fixes the charecter leve
 
 </div>
 
-Below are the and thea heat maps:
+Below are the heat maps:
 
 ![alt text](https://github.com/sasuke-ss1/CS6910/blob/main/Assignment-3/attnMap.png)
 
