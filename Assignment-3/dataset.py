@@ -8,21 +8,25 @@ from utils import word2csv
 
 
 class dataset(Dataset):
+    '''
+    This class houses all the three types of data i.e. the Train, Test and Val data
+    '''
     def __init__(self, path, batchSize=1,lang = "hin", typ="train",sow="\t", eow="\n"):
         self.path = os.path.join(path, lang)
-        self.path = list(map(lambda x: os.path.join(self.path, x), sorted(os.listdir(self.path))))
-        self.sow = sow;self.eow=eow
-        self.batchSize = batchSize
-        self.typ = typ.lower()
+        self.path = list(map(lambda x: os.path.join(self.path, x), sorted(os.listdir(self.path)))) # Set the paths
+        self.sow = sow;self.eow=eow # Set EOW and SOW
+        self.batchSize = batchSize # Get batch size(used for testing only)
+        self.typ = typ.lower() # Get the type of data required finally
 
-        self.datx, self.daty = None, None
+        self.datx, self.daty = None, None # Placeholder variables
 
-        self.data = self.readData()
-        self.tokenize()
-        self.get_data()
+        self.data = self.readData() # Reads the data as it is
+        self.tokenize() # Tokenizes the charecters
+        self.get_data() # Set the data to the placeholder variables
 
     @staticmethod
     def _readData(path: str, sow, eow):
+        # Internal function for loading each lines of the csv file
         with open(path, "r") as f:
             lines = [line.split(",") for line in f.read().split("\n") if line != '']
             
@@ -30,12 +34,15 @@ class dataset(Dataset):
         return lines
 
     def readData(self):
+        # Public function calling the _readData function for the data
         self.test, self.train, self.val = [self._readData(i, self.sow, self.eow) for i in self.path]
 
     def tokenize(self):
+        # Tokenization
         xTok, yTok = set(), set()
         self.maxXlen, self.maxYlen = -1, -1
 
+        # For each word in the train data we add assign them token in increasing order
         for x, y in self.train:
             for ch in x:
                 xTok.add(ch)
@@ -47,26 +54,33 @@ class dataset(Dataset):
 
         self.xLen, self.yLen = len(self.xTok)+2, len(self.yTok)+2
 
+        # Create character to index mapping.
         self.x2TDict = {ch:i+2 for i, ch in enumerate(self.xTok)}
         self.y2TDict = {ch:i+2 for i, ch in enumerate(self.yTok)}
         
-        self.x2TDict[" "] = 0
+        # 0 index is for pad token 
+        self.x2TDict[" "] = 0 
         self.y2TDict[" "] = 0
 
-        self.x2TDict["\r"] = 1
+        # 1 index is for the unknown token
+        self.x2TDict["\r"] = 1 
         self.y2TDict["\r"] = 1
 
+        # Create a reverse mapping from index to character
         self.x2TDictR = {i: char for char, i in self.x2TDict.items()}
         self.y2TDictR = {i: char for char, i in self.y2TDict.items()}
 
     def _process(self, data: list):
+        # Internal function for processing the data and creating tensors.
         for (x, y) in data:
             self.maxXlen = max(self.maxXlen, len(x))
             self.maxYlen = max(self.maxYlen, len(y)) 
 
-        a = torch.zeros((len(data), self.maxXlen), dtype=torch.long)
+        # Placeholder tensor variables
+        a = torch.zeros((len(data), self.maxXlen), dtype=torch.long) 
         b = torch.zeros((len(data), self.maxYlen), dtype=torch.long)
 
+        # Setting the values to the placeholder tensors
         for i, [x, y] in enumerate(data):
             for j, ch in enumerate(x):
                 if ch in self.x2TDict.keys():
@@ -88,6 +102,7 @@ class dataset(Dataset):
         return a, b
 
     def get_data(self):
+        # Set the data in the placeholder variables
         if self.typ == "train":
             self.datx, self.daty = self._process(self.train)
         
@@ -102,6 +117,7 @@ class dataset(Dataset):
     
 
     def __len__(self):
+        # Returns the length of the dataset
         if self.typ == "train":
             return len(self.train)
         
@@ -112,6 +128,7 @@ class dataset(Dataset):
             return len(self.test)
     
     def __getitem__(self, index) -> torch.Tensor:
+        # GetItem overwrite for custom torch dataset
         return self.datx[index], self.daty[index]
 
 
