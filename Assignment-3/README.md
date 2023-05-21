@@ -229,8 +229,6 @@ There are a few more examples, the attention model also fixes the charecter leve
 
 </div>
 
-Below are the heat maps:
-
-![alt text](https://github.com/sasuke-ss1/CS6910/blob/main/Assignment-3/attnMap.png)
+The heat maps can be found in the wandb report
 
 Since Python lacks built-in support for the Tamil font, we only plot the English names. We see that while printing outputs for the PAD, SOW, and EOW token the attention scores are uniform the model isn't giving any weightage to the actual English word but the model is giving weights to the other pad tokens, we also see that the mapping between them is predominantly diagonal implying that Tamil letters align alternatively with the English letters in a sequential way. We also see that a single Tamil letter gives attention to multiple rows suggesting the presence of syllables in English words. Hence proving that our attention mechanism is working.
