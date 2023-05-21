@@ -294,7 +294,7 @@ if __name__ == "__main__":
     if args.question == 2:
         # Wandb Sweeps for question 2 and 4
         wandb.login(key="e99813e81e3838e6607d858a20693d589933495f")
-        with open("./sweep2.yml", "r") as f:
+        with open("./sweep.yml", "r") as f:
             sweep_config = yaml.safe_load(f)
 
         sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)
